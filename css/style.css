@@ -1,0 +1,15 @@
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+@font-face {
+    font-family: 'TitleLogo';
+    src: url('../fonts/title-logo.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Txt';
+    src: url('../fonts/txt.ttf') format('truetype');
+}

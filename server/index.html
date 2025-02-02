@@ -1,0 +1,54 @@
+<div id="login-message" style="display:none;">Veuillez vous connecter pour accéder à cette page.</div>
+<div id="server-content" style="display:none;">
+  <h1>Bienvenue sur la page protégée</h1>
+  <p id="protected-content"></p>
+  <p>a</p>
+</div>
+
+<script>
+  // Fonction pour vérifier si l'utilisateur est connecté
+  function checkSession() {
+    fetch('https://192.168.1.107:3001/api/check-session', {
+      method: 'GET',
+      credentials: 'include'  // Inclut les cookies de session pour vérifier l'état de la connexion
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.connected) {
+        // Si l'utilisateur est connecté, afficher le contenu sécurisé
+        fetchProtectedContent();
+      } else {
+        // Si l'utilisateur n'est pas connecté, rediriger vers la page de login
+        window.location.href = '/server/login.html';  // Redirection vers la page de login
+      }
+    })
+    .catch(error => {
+      console.error('Erreur:', error);
+    });
+  }
+
+  // Fonction pour récupérer le contenu sécurisé
+  function fetchProtectedContent() {
+    fetch('https://192.168.1.107:3001/api/server', {
+      method: 'GET',
+      credentials: 'include'  // Inclut les cookies pour vérifier la session
+    })
+    .then(response => {
+      if (response.status === 403) {
+        window.location.href = '/server/login.html';  // Si l'utilisateur n'est pas autorisé, rediriger vers login
+      } else {
+        return response.json();
+      }
+    })
+    .then(data => {
+      document.getElementById('protected-content').textContent = data.message;
+      document.getElementById('server-content').style.display = 'block';  // Afficher le contenu protégé
+    })
+    .catch(error => {
+      console.error('Erreur:', error);
+    });
+  }
+
+  // Vérifier la session dès que la page se charge
+  checkSession();
+</script>

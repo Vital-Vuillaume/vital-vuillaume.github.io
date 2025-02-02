@@ -1,0 +1,10 @@
+body {
+    color: white;
+    font-family: 'Txt', serif;
+    margin: 30px 10px;
+    background-image: url(../image/bg-server.png);
+    background-attachment: fixed;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
