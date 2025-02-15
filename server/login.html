@@ -6,7 +6,7 @@
     function submitLogin1() {
       const password = document.getElementById('password').value;
   
-      fetch('https://192.168.1.107:3001/api/login', {
+      fetch('https://192.168.1.107:3001/server/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
