@@ -1,14 +1,9 @@
-<!-- login.html -->
-<form id="login-form">
-    <label for="password">Mot de passe:</label>
-    <input type="password" id="password" required />
-    <button type="submit">Se connecter</button>
-  </form>
+<input type="text" id="password" placeholder="Mot de passe" required>
+<button type="button" onclick="submitLogin1()">Se connecter</button>
   
   <script>
     // Soumettre le formulaire de connexion
-  document.getElementById('login-form').addEventListener('submit', function(event) {
-      event.preventDefault();
+    function submitLogin1() {
       const password = document.getElementById('password').value;
   
       fetch('https://192.168.1.107:3001/api/login', {
@@ -16,20 +11,11 @@
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({password: password }),
         credentials: 'include'
-      })
-      .then(response => {
-        if (response.ok) {
-          // Redirection après connexion réussie
-          window.location.href = '/server/';  // Supposons que index.html est à la racine du repo
-        } else {
-          alert('Mot de passe incorrect');
-        }
-      })
-      .catch(error => {
-        console.error('Erreur:', error);
+      }).
+      then(response => {
+        window.location.href = response.url;
       });
-  });
-
+  };
   </script>
