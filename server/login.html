@@ -13,9 +13,12 @@
         },
         body: JSON.stringify({password: password }),
         credentials: 'include'
-      }).
-      then(response => {
-        window.location.href = response.url;
-      });
+      })
+      .then(response => response.json()) // Convertir la réponse en JSON
+      .then(data => {
+        if (data.success) {
+          window.location.href = "/server/"; // Redirection si succès
+        }
+    })
   };
   </script>
