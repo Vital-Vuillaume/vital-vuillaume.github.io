@@ -1,9 +1,8 @@
 <input type="text" id="password" placeholder="Mot de passe" required>
-<button type="button" onclick="submitLogin1()">Se connecter</button>
+<button type="button" onclick="Login()">Se connecter</button>
   
   <script>
-    // Soumettre le formulaire de connexion
-    function submitLogin1() {
+    function Login() {
       const password = document.getElementById('password').value;
   
       fetch('https://192.168.1.107:3001/server/login', {

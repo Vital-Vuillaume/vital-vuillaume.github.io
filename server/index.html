@@ -6,144 +6,39 @@
   <title>Page Protégée</title>
 </head>
 <body>
-
-  <!-- Message si l'utilisateur n'est pas connecté -->
-  <div id="login-message" style="display:none;">
-    <p>Veuillez vous connecter pour accéder à cette page.</p>
-  </div>
-
-  <!-- Contenu sécurisé -->
-  <div id="server-content" style="display:none;">
-    <h1>Bienvenue sur la page protégée</h1>
-    <p id="protected-content"></p>
-
-    <!-- Zone de téléchargement des fichiers -->
-    <h2>Fichiers disponibles</h2>
-    <ul id="file-list"></ul>
-
-    <!-- Formulaire d'upload -->
-    <h2>Uploader un fichier</h2>
-    <form id="uploadForm">
-      <input type="file" id="fileInput" required>
-      <button type="submit">Envoyer</button>
-    </form>
-    <p id="uploadMessage"></p>
-  </div>
-
+  <p>Vous n'etes pas connecte</p>
   <script>
-    // 🔍 Vérifie si l'utilisateur est connecté
-    function checkSession() {
-      fetch('https://192.168.1.107:3001/api/check-session', {
-        method: 'GET',
-        credentials: 'include' // Important pour récupérer la session
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log("✅ Réponse checkSession:", data);
-        if (data.connected) {
-          document.getElementById('server-content').style.display = 'block';
-          fetchProtectedContent();
-        } else {
-          document.getElementById('login-message').style.display = 'block';
-          window.location.href = '/server/login.html'; // Redirection si non connecté
-        }
-      })
-      .catch(error => {
-        console.error("❌ Erreur checkSession:", error);
-      });
+function Connection() {
+  fetch('https://192.168.1.107:3001/server/connect', {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include'
+  })
+  .then(response => {
+    if (response.headers.get("content-type").includes("text/html")) {
+      return response.text();
+    } else {
+      return response.json();
     }
-
-    // 🔐 Récupère le contenu protégé
-    function fetchProtectedContent() {
-      fetch('https://192.168.1.107:3001/api/server', {
-        method: 'GET',
-        credentials: 'include'
-      })
-      .then(response => {
-        if (response.status === 403) {
-          window.location.href = '/server/login.html';
-          return;
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log("🔒 Contenu protégé:", data);
-        document.getElementById("protected-content").innerText = data.message;
-        fetchFiles();
-      })
-      .catch(error => {
-        console.error("❌ Erreur fetchProtectedContent:", error);
+  })
+  .then(data => {
+    if (typeof data === "string") {
+      document.documentElement.innerHTML = data;
+      const scripts = document.querySelectorAll('script');
+      scripts.forEach(script => {
+        const newScript = document.createElement('script');
+        newScript.textContent = script.textContent;
+        document.body.appendChild(newScript);
       });
+    } else if (!data.connected) {
+      window.location.href = "/server/login.html";
     }
+  });
+}
 
-    // 📂 Récupère la liste des fichiers
-    function fetchFiles() {
-      fetch('https://192.168.1.107:3001/files', {
-        method: 'GET',
-        credentials: 'include'
-      })
-      .then(response => response.json())
-      .then(files => {
-        console.log("📁 Fichiers récupérés:", files);
-        const fileList = document.getElementById('file-list');
-        fileList.innerHTML = '';
+Connection();
 
-        files.forEach(file => {
-          const li = document.createElement('li');
-          li.innerHTML = `<a href="https://192.168.1.107:3001/download/${file}" target="_blank">${file}</a>`;
-          fileList.appendChild(li);
-        });
-      })
-      .catch(error => {
-        console.error("❌ Erreur fetchFiles:", error);
-      });
-    }
 
-    // 📤 Gestion de l'upload des fichiers
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById('uploadForm');
-
-      if (form) {
-        form.addEventListener('submit', (event) => {
-          event.preventDefault(); // Empêche le rechargement de la page
-
-          const fileInput = document.getElementById('fileInput');
-          if (!fileInput.files.length) {
-            document.getElementById('uploadMessage').innerText = 'Veuillez sélectionner un fichier.';
-            return;
-          }
-
-          const formData = new FormData();
-          formData.append('file', fileInput.files[0]);
-
-          fetch('https://192.168.1.107:3001/upload', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-          })
-          .then(response => response.json())
-          .then(data => {
-            console.log("📤 Réponse upload:", data);
-            if (data.filename) {
-              document.getElementById('uploadMessage').innerText = 'Fichier téléchargé avec succès!';
-              fetchFiles(); // Rafraîchir la liste des fichiers
-            } else {
-              document.getElementById('uploadMessage').innerText = 'Échec de l\'upload.';
-            }
-          })
-          .catch(error => {
-            console.error("❌ Erreur lors de l'upload:", error);
-            document.getElementById('uploadMessage').innerText = 'Erreur lors de l\'upload.';
-          });
-        });
-      } else {
-        console.error("❌ Le formulaire d'upload n'a pas été trouvé.");
-      }
-    });
-
-    // ✅ Vérifier la session au chargement de la page
-    checkSession();
   </script>
-
 </body>
 </html>
