@@ -1,44 +1,59 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page Protégée</title>
-</head>
-<body>
-  <p>Vous n'etes pas connecte</p>
-  <script>
-function Connection() {
-  fetch('https://192.168.1.107:3001/server/connect', {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include'
-  })
-  .then(response => {
-    if (response.headers.get("content-type").includes("text/html")) {
-      return response.text();
-    } else {
-      return response.json();
-    }
-  })
-  .then(data => {
-    if (typeof data === "string") {
-      document.documentElement.innerHTML = data;
-      const scripts = document.querySelectorAll('script');
-      scripts.forEach(script => {
-        const newScript = document.createElement('script');
-        newScript.textContent = script.textContent;
-        document.body.appendChild(newScript);
-      });
-    } else if (!data.connected) {
-      window.location.href = "/server/login.html";
-    }
-  });
-}
 
-Connection();
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="description" content="This is the VitaLoad server login page.">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta property="og:title" content="VitaLoad server - login page.">
+    <meta property="og:description" content="This is the VitaLoad server login page.">
+    <meta property="og:image" content="home/frontend/image/home-icon.svg">
+    <meta property="og:url" content="http://178.195.51.162:3000/">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="VitaLoad server - login page.">
+    <meta name="twitter:description" content="This is the VitaLoad server login page.">
+    <meta name="twitter:image" content="home/frontend/image/home-icon.svg">
+    
+    <meta name="robots" content="index, follow">
+  
+    <title>VitaLoad</title>
+  </head>
+
+  <body>
+    <script>
+  function Connection() {
+    fetch('https://192.168.1.107:3001/server/connect', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    })
+    .then(response => {
+      if (response.headers.get("content-type").includes("text/html")) {
+        return response.text();
+      } else {
+        return response.json();
+      }
+    })
+    .then(data => {
+      if (typeof data === "string") {
+        document.documentElement.innerHTML = data;
+        const scripts = document.querySelectorAll('script');
+        scripts.forEach(script => {
+          const newScript = document.createElement('script');
+          newScript.textContent = script.textContent;
+          document.body.appendChild(newScript);
+        });
+      } else if (!data.connected) {
+        window.location.href = "/server/login.html";
+      }
+    });
+  }
+
+  Connection();
 
 
-  </script>
+    </script>
 </body>
 </html>
