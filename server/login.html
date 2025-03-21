@@ -1,23 +1,15 @@
-<input type="text" id="password" placeholder="Mot de passe" required>
-<button type="button" onclick="Login()">Se connecter</button>
-  
-  <script>
-    function Login() {
-      const password = document.getElementById('password').value;
-  
-      fetch('https://178.195.51.162:3000/server/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({password: password }),
-        credentials: 'include'
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          window.location.href = "https://vital-vuillaume.github.io/server/";
-        }
-    })
-  };
-  </script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script defer src="../frontend/js/ipOrigins.js"></script>
+    <script defer src="./js/login.js"></script>
+    <title>Login</title>
+  </head>
+
+  <body>
+    <input type="text" id="password" placeholder="Mot de passe" required>
+    <button type="button" onclick="Login()">Se connecter</button>
+  </body>
+</html>
