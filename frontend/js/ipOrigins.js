@@ -1,4 +1,4 @@
-const ipServer = "192.168.1.107:3001";
+const ipServer = "178.195.51.162:3000";
 
 const port = ipServer.split(":")[1];
 
