@@ -12,7 +12,7 @@ function Login() {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        window.location.href = "https://vital-vuillaume.github.io/server/";
+        window.location.href = "/server/";
       }
   })
 };
