@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="description" content="Le site de presentation de Vital Vuillaume.">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    
+    <meta property="og:title" content="Vital Vuillaume presentation">
+    <meta property="og:description" content="Le site de présentation de Vital Vuillaume.">
+    
+    <meta name="robots" content="index, follow">
+    
+    
+    <script defer src="../frontend/js/ipOrigins.js"></script>
+
+
+    <title>Vital Vuillaume Presentation</title>
+  </head>
+
+  <body>
+    <form id="bashForm">
+      <input type="text" id="inputText" name="inputText" required />
+      <button type="submit">Envoyer</button>
+    </form>
+  
+    <div class="resultHtml"></div>
+
+    <div class="resultCode"></div>
+  
+    <script>
+      document.getElementById('bashForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const inputText = document.getElementById('inputText').value;
+  
+        fetch(`https://${window.config.ipServer}/testia`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputText: inputText })
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.querySelector(".resultHtml").innerHTML += data;
+            document.querySelector(".resultCode").textContent += data;
+        })
+      });
+    </script>
+  </body>
+</html>
