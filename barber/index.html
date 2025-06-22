@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prendre Rendez-vous - Coiffeur</title>
+    <script defer src="../frontend/js/ipOrigins.js"></script>
+    <script defer src="./js/script.js"></script>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <form class="form-container" id="rdv-form">
+      <label for="date">Date du rendez-vous :</label>
+      <input type="date" id="date" name="date" required />
+
+      <label for="time">Heure du rendez-vous :</label>
+      <input type="time" id="time" name="time" required />
+
+      <label for="comment">Commentaire :</label>
+      <textarea id="comment" name="comment" rows="4" placeholder="Ex : Je souhaite une coupe courte."></textarea>
+
+      <button id="sendBtn" type="button">Envoyer</button>
+    </form>
+
+    <div id="rdv-list">Chargement des rendez-vous...</div>
+  </body>
+</html>
