@@ -1,6 +1,6 @@
 :root {
   --textColor: white;
-  --bgColor: #0abab5;
+  --bgColor: #0abab569;
 }
 
 * {
@@ -14,6 +14,11 @@
     src: url('../fonts/txt.ttf') format('truetype');
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
 body {
     color: var(--textColor);
     font-family: 'Txt', serif;
@@ -23,15 +28,30 @@ body {
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 155px;
+}
+
+main {
+    flex-grow: 1;
+}
+
+a {
+  text-decoration: none;
+  color: var(--textColor);
 }
 
 .block {
     background-color: var(--bgColor);
-    width: 95%;
+    width: calc(100% - 30px);
     padding: 15px;
-    border-radius: 20px;
+    border-radius: 30px;
+    backdrop-filter: blur(15px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    margin: 0 auto;
 }
 
 .nav {
@@ -43,16 +63,53 @@ body {
     display: flex;
     align-items: center;
     gap: 50px;
+    font-size: 1.5em;
 }
 
 .logoBlock {
     display: flex;
     align-items: center;
     gap: 15px;
-    font-size: 1.7em;
+    font-size: 1.9em;
     font-weight: 500;
+    cursor: pointer;
 }
 
 .logoSite {
-    width: 90px;
+    width: 70px;
+}
+
+.link {
+  padding: 5px 10px;
+  transition: 1.2s ease;
+  transform: translateY(0px);
+  cursor: pointer;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, #ffffff, #3e3e3e00);
+  border-radius: 3px;
+  transition: 0.5s ease;
+}
+
+.link:hover {
+  transform: translateY(-5px);
+}
+
+.link:hover::after {
+  width: 100%;
+}
+
+.footer {
+    display: flex;
+    align-items: center;
+    gap: 50px;
+    margin: 20px auto;
+    font-size: 1.5em;
 }

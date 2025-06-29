@@ -1,3 +1,10 @@
+const logoBlock = document.querySelector(".logoBlock");
+
+logoBlock.addEventListener('click', () => {
+    window.location.href = window.location.origin;
+});
+
+
 const titleNav = document.querySelector(".titleNav");
 
 let titleSite = window.location.hostname;
