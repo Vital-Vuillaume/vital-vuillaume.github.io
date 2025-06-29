@@ -10,7 +10,7 @@ if (!userId) {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            logout.textContent = "Log out";
+            logout.textContent = "Log Out";
             const username = data.user.username;
             info.textContent = username;
             info.href = `${window.location.origin}/profile/#${username}`;
@@ -27,8 +27,8 @@ if (!userId) {
 
 function SignInText() {
     logout.style.display = "none";
-    info.textContent = "Sign in"; 
-    info.href = `${window.location.origin}/sign`;
+    info.textContent = "Login"; 
+    info.href = `${window.location.origin}/login`;
 }
 
 logout.addEventListener('click', () => {
