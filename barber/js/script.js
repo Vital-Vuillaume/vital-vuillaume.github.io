@@ -1,18 +1,8 @@
 let userId = localStorage.getItem('user_id');
 
 if (!userId) {
-  fetch(`https://${window.config.ipServer}/user`)
-    .then(res => res.json())
-    .then(data => {
-      userId = data.userId;
-      localStorage.setItem('user_id', userId);
-    })
-    .catch(err => {
-      alert("Erreur lors de la génération de l'identifiant utilisateur.");
-      console.error(err);
-    });
+  console.log("Pas connecté");
 }
-
 
 document.getElementById('sendBtn').addEventListener('click', () => {
   const date = document.getElementById('date').value;
