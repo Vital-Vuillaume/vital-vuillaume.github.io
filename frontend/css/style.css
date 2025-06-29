@@ -1,3 +1,8 @@
+:root {
+  --textColor: white;
+  --bgColor: #0abab5;
+}
+
 * {
     box-sizing: border-box;
     padding: 0;
@@ -5,11 +10,46 @@
 }
 
 @font-face {
-    font-family: 'TitleLogo';
-    src: url('../fonts/title-logo.ttf') format('truetype');
-}
-
-@font-face {
     font-family: 'Txt';
     src: url('../fonts/txt.ttf') format('truetype');
+}
+
+body {
+    color: var(--textColor);
+    font-family: 'Txt', serif;
+    background-color: var(--bgColor);
+    background-image: url(../images/bg.png);
+    background-attachment: fixed;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.block {
+    background-color: var(--bgColor);
+    width: 95%;
+    padding: 15px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.nav {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+}
+
+.logoBlock {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logoSite {
+    width: 90px;
 }

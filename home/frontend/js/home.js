@@ -1,7 +1,6 @@
 let userId = localStorage.getItem('user_id');
 
 if (!userId) {
-    window.location.href = '/login';
 }
 
 const infos = document.querySelectorAll(".info");
