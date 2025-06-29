@@ -3,7 +3,7 @@ const titleNav = document.querySelector(".titleNav");
 let titleSite = window.location.hostname;
 
 if (titleSite.includes('.')) {
-  titleSite = titleSite.substring(0, titleSite.lastIndexOf('.'));
+  titleSite = titleSite.substring(0, titleSite.indexOf('.'));
 }
 
 titleNav.textContent = titleSite;
