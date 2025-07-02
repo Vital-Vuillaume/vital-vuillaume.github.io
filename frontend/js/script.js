@@ -47,7 +47,7 @@ const titleNav = document.querySelector(".titleNav");
 
 const infoPage = document.querySelector(".infoPage");
 
-const titlePage = window.location.pathname.replace(/^\/|\/$/g, '');
+const titlePage = window.location.pathname.replace(/^\/|\/$/g, '').charAt(0).toUpperCase() + window.location.pathname.replace(/^\/|\/$/g, '').slice(1);
 
 infoPage.textContent = titlePage;
 document.title = `VitaLoad ${titlePage}`;
