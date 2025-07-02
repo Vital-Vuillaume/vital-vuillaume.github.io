@@ -99,11 +99,12 @@ a {
   width: 100%;
 }
 
-.infoPage {
+.separateur {
   font-size: 2em;
 }
 
 .infoPage {
+  font-size: 2em;
   width: max-content;
 }
 

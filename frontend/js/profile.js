@@ -1,7 +1,7 @@
 let hash = window.location.hash;
-let texte = hash.substring(1);
+let userLocation = hash.substring(1);
 
-  fetch(`https://${window.config.ipServer}/username/${texte}`)
+  fetch(`https://${window.config.ipServer}/username/${userLocation}`)
     .then(res => {
       if (!res.ok) {
         throw new Error("Utilisateur introuvable");
