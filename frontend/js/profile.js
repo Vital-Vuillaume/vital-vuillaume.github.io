@@ -45,7 +45,7 @@ getUserInfo().then(username => {
 function NoUser() {
   error.style.display = "block";
   content.style.display = "none";
-  notFound.textContent = `The user ${userLocation} was not found.`;
+  notFound.textContent = `The user "${userLocation}" was not found.`;
 }
 
 let linkAll = "Voici un exemple de texte beaucoup trop long";
