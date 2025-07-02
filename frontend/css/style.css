@@ -14,11 +14,6 @@
     src: url('../fonts/txt.ttf') format('truetype');
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-}
-
 body {
     color: var(--textColor);
     font-family: 'Txt', serif;
@@ -28,14 +23,9 @@ body {
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    padding-top: 155px;
-}
-
-main {
-    flex-grow: 1;
+  max-width: 1460px;
+  margin: 0 auto;
+  padding: 200px 20px 20px 20px;
 }
 
 a {
@@ -45,13 +35,12 @@ a {
 
 .block {
     background-color: var(--bgColor);
-    width: calc(100% - 30px);
     padding: 15px;
     border-radius: 30px;
-    backdrop-filter: blur(15px);
+    backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    margin: 0 auto;
+  margin-bottom: 70px;
 }
 
 .nav {
@@ -64,6 +53,8 @@ a {
     align-items: center;
     gap: 50px;
     font-size: 1.5em;
+    width: calc(100% - 40px);
+    overflow: auto;
 }
 
 .logoBlock {
@@ -83,6 +74,7 @@ a {
   padding: 5px 10px;
   transition: 1.2s ease;
   transform: translateY(0px);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -106,10 +98,17 @@ a {
   width: 100%;
 }
 
+.infoPage {
+  width: max-content;
+  font-size: 1.2em;
+}
+
 .footer {
     display: flex;
     align-items: center;
     gap: 50px;
-    margin: 20px auto;
-    font-size: 1.5em;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0px;
+  justify-content: space-between;
 }

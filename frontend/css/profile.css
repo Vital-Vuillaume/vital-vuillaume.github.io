@@ -1,0 +1,20 @@
+.blockProfile {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.imgProfile {
+    width: 400px;
+}
+
+.username {
+    font-size: 1.8em;
+}
+
+@media screen and (max-width: 440px) {
+    .imgProfile {
+        width: 100%;
+    }
+}
