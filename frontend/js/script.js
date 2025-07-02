@@ -3,26 +3,30 @@ const logout = document.querySelector(".logout");
 
 let userId = localStorage.getItem('user_id');
 
-if (!userId) {
-    SignInText();
-} else {
-    fetch(`https://${window.config.ipServer}/profile/${userId}`)
-    .then(res => res.json())
-    .then(data => {
+async function getUserInfo() {
+    if (!userId) {
+        SignInText();
+        return null;
+    }
+    try {
+        const res = await fetch(`https://${window.config.ipServer}/profile/${userId}`);
+        const data = await res.json();
         if (data.success) {
             logout.textContent = "Log Out";
             const username = data.user.username;
             info.textContent = username;
             info.href = `${window.location.origin}/profile/#${username}`;
+            return username;  // renvoyer username
         } else {
             console.error("Erreur :", data);
             SignInText();
+            return null;
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error("Fetch error:", error);
         SignInText();
-    });
+        return null;
+    }
 }
 
 function SignInText() {

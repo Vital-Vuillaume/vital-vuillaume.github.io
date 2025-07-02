@@ -73,7 +73,7 @@ a {
 
 .link {
   padding: 5px 10px;
-  transition: 1.2s ease;
+  transition: 1.2s ease transform, width;
   transform: translateY(0px);
   white-space: nowrap;
   cursor: pointer;
@@ -121,6 +121,23 @@ a {
   margin: 0px;
   justify-content: space-between;
   width: 100%;
+}
+
+.error {
+  max-width: max-content;
+  margin: 0px auto 70px auto;
+  display: none;
+}
+
+.notFound {
+  font-size: 2em;
+  margin: 25px;
+  overflow-wrap: break-word;
+  line-height: 50px;
+}
+
+.content {
+  display: block;
 }
 
 @media screen and (max-width: 768px) {
