@@ -3,7 +3,7 @@
   height: 200px;
   perspective: 1000px;
   position: relative;
-  margin: 150px auto;
+  margin-bottom: 135px;
 }
 
 .cube {
@@ -12,6 +12,15 @@
   position: relative;
   transform-style: preserve-3d;
   animation: spin 15s infinite linear;
+  transition: 1.5s;
+}
+
+.cube:hover {
+  scale: 0.8;
+}
+
+.cubeBlock {
+  margin: 80px 125px 0px 125px;
 }
 
 .face {
@@ -64,5 +73,23 @@
   }
   to {
     transform: rotateX(360deg) rotateY(360deg);
+  }
+}
+
+.contentCube {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.titreCube {
+  font-size: 2em;
+  width: max-content;
+  margin: 0 auto 70px auto;
+}
+
+@media screen and (max-width: 768px) {
+  .cube:hover {
+    scale: 1;
   }
 }

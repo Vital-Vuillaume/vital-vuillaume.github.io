@@ -105,9 +105,16 @@ a {
   font-size: 2em;
 }
 
-.infoPage {
+.blockPage {
   font-size: 2em;
   width: max-content;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.imgPage {
+  width: 38px;
 }
 
 .description {
