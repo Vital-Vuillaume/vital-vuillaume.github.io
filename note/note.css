@@ -24,7 +24,7 @@
     background-color: var(--textColor);
     color: black;
     border-radius: 20px;
-    padding: 50px;
+    padding: 4%;
     overflow: auto;
     height: 1100px;
     width: 100%;
@@ -56,4 +56,10 @@
 
 .fileTxt::placeholder {
     color: var(--textColor);
+}
+
+@media screen and (max-width: 1235px) {
+    .bar {
+        justify-content: left;
+    }
 }
