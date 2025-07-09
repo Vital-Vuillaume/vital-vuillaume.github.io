@@ -1,0 +1,59 @@
+.bar {
+    height: 55px;
+    overflow: auto;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    white-space: nowrap;
+    gap: 90px;
+    overflow-y: hidden;
+}
+
+.modify {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.imgBar {
+    width: 30px;
+}
+
+.write {
+    background-color: var(--textColor);
+    color: black;
+    border-radius: 20px;
+    padding: 50px;
+    overflow: auto;
+    height: 1100px;
+    width: 100%;
+    border: none;
+    resize: none;
+    outline: none;
+}
+
+.blockWrite.active {
+    position: absolute;
+    width: calc(100% - 40px);
+    left: 50%;
+    transform: translate(-50%, -315px);
+    z-index: 1100;
+    height: max-content;
+}
+
+.inputHidden {
+    display: none;
+}
+
+.fileTxt {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: var(--textColor);
+    width: 80px;
+}
+
+.fileTxt::placeholder {
+    color: var(--textColor);
+}
