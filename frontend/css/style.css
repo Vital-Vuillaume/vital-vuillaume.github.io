@@ -39,10 +39,9 @@ a {
     border-radius: 30px;
     backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   margin-bottom: 70px;
-  line-height: 25px;
 }
 
 .nav {
@@ -74,10 +73,12 @@ a {
 
 .link {
   padding: 5px 10px;
-  transition: 1.2s ease transform, width;
-  transform: translateY(0px);
+  transition: 1.2s transform ease;
+  transform: translateY(0px) scale(1);
   white-space: nowrap;
   cursor: pointer;
+  width: max-content;
+  height: max-content;
 }
 
 .link::after {
@@ -93,7 +94,7 @@ a {
 }
 
 .link:hover {
-  transform: translateY(-5px);
+  transform: translateY(-5px) scale(1.07);
 }
 
 .link:hover::after {
@@ -145,9 +146,30 @@ a {
   display: block;
 }
 
+::-webkit-scrollbar {
+  width: 8px;
+  cursor: pointer;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0abab4;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(97, 97, 97);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 @media screen and (max-width: 768px) {
   .link:hover {
     transform: translateY(0px);
+    scale: 1;
   }
 
   .link:hover::after {

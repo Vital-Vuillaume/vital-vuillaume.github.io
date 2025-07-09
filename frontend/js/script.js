@@ -11,12 +11,14 @@ async function getUserInfo() {
     try {
         const res = await fetch(`https://${window.config.ipServer}/profile/${userId}`);
         const data = await res.json();
+
         if (data.success) {
             logout.textContent = "Log Out";
             const username = data.user.username;
             info.textContent = username;
             info.href = `${window.location.origin}/profile/#${username}`;
-            return username;  // renvoyer username
+
+            return username;
         } else {
             console.error("Erreur :", data);
             SignInText();
@@ -25,9 +27,12 @@ async function getUserInfo() {
     } catch (error) {
         console.error("Fetch error:", error);
         SignInText();
+
         return null;
     }
 }
+
+getUserInfo();
 
 function SignInText() {
     logout.style.display = "none";
@@ -53,7 +58,12 @@ const infoPage = document.querySelector(".infoPage");
 
 const titlePage = window.location.pathname.replace(/^\/|\/$/g, '').charAt(0).toUpperCase() + window.location.pathname.replace(/^\/|\/$/g, '').slice(1);
 
-infoPage.textContent = titlePage;
+if(titlePage == "") {
+    infoPage.textContent = "Home";
+} else {
+    infoPage.textContent = titlePage;
+}
+
 document.title = `VitaLoad ${titlePage}`;
 
 
