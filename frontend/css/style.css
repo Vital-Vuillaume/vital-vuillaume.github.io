@@ -54,7 +54,7 @@ a {
     align-items: center;
     gap: 50px;
     font-size: 1.5em;
-    width: calc(100% - 40px);
+    width: 1420px;
     overflow: auto;
 }
 
@@ -77,7 +77,6 @@ a {
   transform: translateY(0px) scale(1);
   white-space: nowrap;
   cursor: pointer;
-  width: max-content;
   height: max-content;
 }
 
@@ -94,7 +93,7 @@ a {
 }
 
 .link:hover {
-  transform: translateY(-5px) scale(1.07);
+  transform: translateY(-5px);
 }
 
 .link:hover::after {
@@ -133,7 +132,7 @@ a {
 }
 
 .error {
-  max-width: max-content;
+  max-width: 650px;
   margin: 0px auto 70px auto;
   display: none;
 }
@@ -151,6 +150,17 @@ a {
 
 .content {
   display: block;
+}
+
+.fileTxt {
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--textColor);
+}
+
+.fileTxt::placeholder {
+  color: var(--textColor);
 }
 
 ::-webkit-scrollbar {
@@ -171,6 +181,12 @@ a {
 
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+@media screen and (max-width: 1460px) {
+  .nav {
+    width: calc(100% - 40px);
+  }
 }
 
 @media screen and (max-width: 768px) {

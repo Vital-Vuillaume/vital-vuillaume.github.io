@@ -13,6 +13,32 @@
     font-size: 1.6em;
 }
 
+.blockSearch {
+    margin: 0 auto;
+    max-width: 650px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 3%;
+}
+
+.inputSearch {
+    width: 495px;
+    font-size: 1.2em;
+    padding: 5px;
+}
+
+.imgSend {
+    width: 28px;
+}
+
+@media screen and (max-width: 690px) {
+    .inputSearch {
+        width: 100%;
+        font-size: 1.1em;
+    }
+}
+
 @media screen and (max-width: 440px) {
     .imgProfile {
         width: 100%;

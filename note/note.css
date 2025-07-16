@@ -37,25 +37,20 @@
     position: absolute;
     width: calc(100% - 40px);
     left: 50%;
-    transform: translate(-50%, -315px);
+    transform: translate(-50%, -330px);
     z-index: 1100;
     height: max-content;
 }
 
 .inputHidden {
-    display: none;
+    width: 0px;
+    height: 0px;
+    position: absolute;
+    visibility: hidden;
 }
 
-.fileTxt {
-    border: none;
-    outline: none;
-    background-color: transparent;
-    color: var(--textColor);
+.inputNote {
     width: 80px;
-}
-
-.fileTxt::placeholder {
-    color: var(--textColor);
 }
 
 @media screen and (max-width: 1235px) {

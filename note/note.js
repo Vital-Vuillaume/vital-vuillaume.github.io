@@ -10,8 +10,9 @@ const openFile = document.getElementById('fileInput');
 const writeBlock = document.querySelector(".blockWrite");
 const writeTxt = document.querySelector(".write");
 
-const footer = document.querySelector(".footer");
 const nav = document.querySelector(".nav");
+const footer = document.querySelector(".footer");
+const description = document.querySelector(".description");
 
 const words = document.querySelector(".words");
 const caractere = document.querySelector(".caractere");
@@ -84,7 +85,7 @@ function SizeMode() {
     writeTxt.addEventListener("input", resizeTextarea);
     resizeTextarea();
 
-    infoPage.style.visibility = "hidden";
+    description.style.visibility = "hidden";
     footer.style.visibility = "hidden";
     nav.style.visibility = "hidden";
 
@@ -98,7 +99,7 @@ function SizeMode() {
       writeTxt.removeEventListener("input", resizeTextarea);
     }
 
-    infoPage.style.visibility = "visible";
+    description.style.visibility = "visible";
     footer.style.visibility = "visible";
     nav.style.visibility = "visible";
 

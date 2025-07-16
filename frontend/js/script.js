@@ -1,5 +1,6 @@
 const info = document.querySelector(".info");
 const logout = document.querySelector(".logout");
+const blockPage = document.querySelector(".blockPage");
 
 let userId = localStorage.getItem('user_id');
 
@@ -51,6 +52,9 @@ logoBlock.addEventListener('click', () => {
     window.location.href = window.location.origin;
 });
 
+blockPage.addEventListener('click', () => {
+    window.location.href = window.location.href.split('#')[0]
+});
 
 const titleNav = document.querySelector(".titleNav");
 
@@ -65,7 +69,6 @@ if(titlePage == "") {
 }
 
 document.title = `VitaLoad ${titlePage}`;
-
 
 const production = document.querySelector(".production");
 
