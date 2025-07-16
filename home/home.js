@@ -40,3 +40,5 @@ function injectCube(imageSrc, titleText, link) {
 injectCube("../note/images/icone.png", "Note", "./note");
 
 injectCube("../profile/images/icone.png", "Profile", "./profile");
+
+injectCube("../signin/images/icone.png", "Sign In", "./signin");
