@@ -4,7 +4,7 @@
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    justify-content: space-around;
+    justify-content: space-between;
     white-space: nowrap;
     gap: 90px;
     overflow-y: hidden;
