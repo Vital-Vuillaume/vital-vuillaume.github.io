@@ -1,4 +1,4 @@
-const apiUrl = "/vital/api";;
+const apiUrl = "rmbi.ch/vital/api/proxy.php";;
 
 async function fetchApiMessage() {
     const messageEl = document.getElementById('api-message');
