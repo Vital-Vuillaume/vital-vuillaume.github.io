@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Serveur · VitaLoad</title>
+    <link rel="stylesheet" href="../frontend/css/style.css">
+    <link rel="stylesheet" href="./serveur.css">
+    <script src="../frontend/js/ipOrigins.js" defer></script>
+    <script src="../frontend/js/script.js" defer></script>
+    <script src="./serveur.js" defer></script>
+  </head>
+  <body class="panel-page">
+    <header class="topbar">
+      <div>
+        <p class="vl-eyebrow">VitaLoad</p>
+        <h1>Serveur</h1>
+      </div>
+      <div class="account">
+        <span id="username"></span>
+        <button id="logout" class="vl-button vl-button-secondary" type="button">Déconnexion</button>
+      </div>
+    </header>
+    <main>
+      <section class="explorer">
+        <div class="explorer-toolbar">
+          <nav id="breadcrumbs" class="breadcrumbs" aria-label="Chemin du dossier"></nav>
+          <div class="toolbar-actions">
+            <button id="new-file" class="vl-button" type="button">Nouveau fichier</button>
+            <button id="new-directory" class="vl-button vl-button-secondary" type="button">Nouveau dossier</button>
+            <button id="import-files" class="vl-button vl-button-secondary" type="button">Importer des fichiers</button>
+            <button id="import-directory" class="vl-button vl-button-secondary" type="button">Importer un dossier</button>
+            <button id="refresh" class="vl-button vl-button-secondary" type="button" aria-label="Actualiser">Actualiser</button>
+          </div>
+        </div>
+        <div id="file-list" class="file-grid" aria-label="Fichiers et dossiers"></div>
+        <p id="empty-state" class="empty-state" hidden>Ce dossier est vide.</p>
+        <p id="page-error" class="vl-message" role="alert" aria-live="assertive"></p>
+        <p id="upload-message" class="upload-message" role="status" aria-live="polite"></p>
+        <input id="file-upload-input" type="file" multiple hidden>
+        <input id="directory-upload-input" type="file" webkitdirectory multiple hidden>
+      </section>
+
+      <section id="editor-panel" class="editor-panel" aria-label="Éditeur de fichier" hidden>
+        <div class="editor-heading">
+          <div>
+            <p class="vl-eyebrow">Édition</p>
+            <h2 id="selected-file">Aucun fichier sélectionné</h2>
+          </div>
+          <div class="toolbar-actions">
+            <button id="save-file" class="vl-button" type="button" disabled>Enregistrer</button>
+          </div>
+        </div>
+        <p id="editor-empty" class="editor-empty">Sélectionnez un fichier pour afficher et modifier son contenu.</p>
+        <textarea id="file-content" class="vl-input file-content" spellcheck="false" aria-label="Contenu du fichier" hidden></textarea>
+        <p id="file-message" class="vl-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="terminal-panel" aria-label="Terminal limité">
+        <div class="terminal-heading">
+          <div>
+            <p class="vl-eyebrow">Outils</p>
+            <h2>Terminal limité</h2>
+            <p class="terminal-help">pwd · ls · cd · cat · mkdir · touch · write · mv · cp · rm</p>
+          </div>
+          <button id="clear-terminal" class="vl-button vl-button-secondary" type="button">Effacer</button>
+        </div>
+        <pre id="terminal-output" class="terminal-output" aria-live="polite"></pre>
+        <form id="terminal-form" class="terminal-form">
+          <label id="terminal-prompt" for="terminal-input">/VitaLoad $</label>
+          <input id="terminal-input" class="vl-input" type="text" autocomplete="off" spellcheck="false" aria-label="Commande">
+          <button class="vl-button" type="submit">Exécuter</button>
+        </form>
+      </section>
+    </main>
+
+    <dialog id="file-dialog" class="file-dialog">
+      <form id="file-dialog-form" method="dialog">
+        <p class="vl-eyebrow">Serveur VitaLoad</p>
+        <h2 id="file-dialog-title"></h2>
+        <p id="file-dialog-message" class="dialog-message"></p>
+        <label id="file-dialog-label" for="file-dialog-input"></label>
+        <input id="file-dialog-input" class="vl-input" type="text" maxlength="255" autocomplete="off">
+        <div class="dialog-actions">
+          <button id="file-dialog-cancel" class="vl-button vl-button-secondary" type="button">Annuler</button>
+          <button id="file-dialog-confirm" class="vl-button" type="submit">Confirmer</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

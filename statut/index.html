@@ -1,57 +1,148 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
+  <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script defer src="./js/script.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="État en temps réel des services et ressources du serveur VitaLoad.">
+    <link rel="stylesheet" href="../frontend/css/style.css">
     <link rel="stylesheet" href="./css/style.css">
-    <title>Tableau de bord serveur</title>
-</head>
-<body>
-<div class="wrapper">
-<h1>État du serveur</h1>
-<div class="container">
-<div class="card">
-<h2>Statut</h2>
-<p id="api-message">Chargement...</p>
-</div>
+    <script defer src="../frontend/js/ipOrigins.js"></script>
+    <script defer src="../frontend/js/script.js"></script>
+    <script defer src="./js/script.js"></script>
+    <title>VitaLoad · Statut</title>
+  </head>
+  <body>
+    <main class="status-dashboard">
+      <section class="status-heading">
+        <div>
+          <p class="status-eyebrow">Centre de surveillance</p>
+          <h1>État du serveur</h1>
+          <p class="status-subtitle">Disponibilité et ressources système en temps réel.</p>
+        </div>
+      </section>
 
+      <section class="status-overview" aria-label="Résumé du serveur">
+        <article class="status-panel overview-card status-overview-service">
+          <span id="status-indicator" class="status-indicator is-loading" aria-hidden="true"></span>
+          <div>
+            <p class="metric-label">État de l’API</p>
+            <strong id="api-message" class="metric-value" role="status">Vérification…</strong>
+            <span class="metric-detail">Disponibilité du serveur</span>
+          </div>
+        </article>
+        <article class="status-panel overview-card">
+          <span class="overview-icon" aria-hidden="true">◷</span>
+          <div>
+            <p class="metric-label">Disponibilité</p>
+            <strong id="uptime" class="metric-value">Chargement…</strong>
+          </div>
+        </article>
+        <article class="status-panel overview-card">
+          <span class="overview-icon" aria-hidden="true">↻</span>
+          <div>
+            <p class="metric-label">Dernière mise à jour</p>
+            <strong id="timestamp" class="metric-value">En attente…</strong>
+            <span id="timestamp-relative" class="metric-detail">Les relevés sont actualisés toutes les 10 secondes.</span>
+          </div>
+        </article>
+        <article class="status-panel overview-card">
+          <span class="overview-icon" aria-hidden="true">⌁</span>
+          <div>
+            <p class="metric-label">Temps de réponse</p>
+            <strong id="ping" class="metric-value">—</strong>
+            <span id="ping-trend" class="metric-detail">Mesure de l’API</span>
+          </div>
+        </article>
+      </section>
 
-<div class="card">
-<h2>Uptime</h2>
-<p id="uptime">Chargement...</p>
-</div>
+      <section class="resource-grid" aria-label="Utilisation des ressources">
+        <article class="status-panel resource-card">
+          <div class="panel-heading">
+            <div>
+              <p class="metric-label">Ressources</p>
+              <h2>Mémoire vive</h2>
+            </div>
+            <span class="panel-icon" aria-hidden="true">▦</span>
+          </div>
+          <div class="resource-content">
+            <div id="memory-gauge" class="resource-gauge" role="img" aria-label="Utilisation mémoire non disponible">
+              <div class="gauge-center">
+                <strong id="memory-percent">—</strong>
+                <span>utilisée</span>
+              </div>
+            </div>
+            <div class="resource-details">
+              <div><span>Utilisée</span><strong id="memory-used">—</strong></div>
+              <div><span>Disponible</span><strong id="memory-free">—</strong></div>
+              <div><span>Total</span><strong id="memory-total">—</strong></div>
+            </div>
+          </div>
+          <div class="meter-track"><span id="memory-meter"></span></div>
+          <p class="resource-footnote">Mémoire système · RSS du processus Node : <strong id="memory-rss">—</strong></p>
+        </article>
 
+        <article class="status-panel resource-card">
+          <div class="panel-heading">
+            <div>
+              <p class="metric-label">Stockage</p>
+              <h2>Espace disque</h2>
+            </div>
+            <span class="panel-icon" aria-hidden="true">▤</span>
+          </div>
+          <div class="resource-content">
+            <div id="disk-gauge" class="resource-gauge disk-gauge" role="img" aria-label="Utilisation disque non disponible">
+              <div class="gauge-center">
+                <strong id="disk-percent">—</strong>
+                <span>utilisé</span>
+              </div>
+            </div>
+            <div class="resource-details">
+              <div><span>Utilisé</span><strong id="disk-used">—</strong></div>
+              <div><span>Libre</span><strong id="disk-free">—</strong></div>
+              <div><span>Total</span><strong id="disk-total">—</strong></div>
+            </div>
+          </div>
+          <div class="meter-track disk-meter-track"><span id="disk-meter"></span></div>
+          <p class="resource-footnote">Espace du volume système</p>
+        </article>
 
-<div class="card">
-<h2>Mémoire</h2>
-<p id="memory">Chargement...</p>
-</div>
+        <article class="status-panel chart-card">
+          <div class="panel-heading">
+            <div>
+              <p class="metric-label">Processeur</p>
+              <h2>Charge du système</h2>
+            </div>
+            <span id="cpu-cores" class="chart-badge">— cœurs</span>
+          </div>
+          <p id="cpu-model" class="chart-description">Modèle du processeur en attente…</p>
+          <div class="load-summary">
+            <div><span>1 min</span><strong id="load-1">—</strong></div>
+            <div><span>5 min</span><strong id="load-5">—</strong></div>
+            <div><span>15 min</span><strong id="load-15">—</strong></div>
+          </div>
+          <div id="load-chart" class="chart chart-load" role="img" aria-label="Graphique de la charge processeur"></div>
+          <p class="chart-axis"><span>Relevés récents</span><span>Charge moyenne</span></p>
+        </article>
 
+        <article class="status-panel chart-card">
+          <div class="panel-heading">
+            <div>
+              <p class="metric-label">Réseau</p>
+              <h2>Temps de réponse</h2>
+            </div>
+            <span id="ping-status" class="chart-badge">En attente</span>
+          </div>
+          <p class="chart-description">Temps nécessaire pour obtenir une réponse du serveur.</p>
+          <div class="ping-current"><strong id="ping-chart-current">—</strong><span>ms</span></div>
+          <div id="ping-chart" class="chart chart-ping" role="img" aria-label="Graphique du temps de réponse réseau"></div>
+          <p class="chart-axis"><span>Relevés récents</span><span>Millisecondes</span></p>
+        </article>
+      </section>
 
-<div class="card">
-<h2>CPU</h2>
-<p id="cpu">Chargement...</p>
-</div>
-
-
-<div class="card">
-<h2>Disque</h2>
-<p id="disk">Chargement...</p>
-</div>
-
-
-<div class="card">
-<h2>Dernière mise à jour</h2>
-<p id="timestamp">Chargement...</p>
-</div>
-
-
-<div class="card">
-<h2>Ping</h2>
-<p id="ping">Chargement...</p>
-</div>
-</div>
-</div>
-</body>
+      <footer class="status-footer">
+        <span>Actualisation automatique toutes les 10 secondes</span>
+        <span id="last-check">En attente du premier relevé</span>
+      </footer>
+    </main>
+  </body>
 </html>

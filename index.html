@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8"/>
     <meta name="description" content="VitaLoad est une plateforme d'hébergement pour mes projets web.">
@@ -30,37 +30,37 @@
 
     <script defer src="./home/home.js"></script>
 
-    <title>Waiting...</title>
+    <title>VitaLoad · Accueil</title>
   </head>
 
   <body>
-      <div class="nav block">
-            <div class="logoBlock link">
-                <img class="logoSite" src="./frontend/images/icon.svg" alt="logo site">
-                <p>VitaLoad</p>
-            </div>
-            <p class="separateur">|</p>
-            <a class="info link">Waiting...</a>
-            <p class="logout link">Waiting...</p>
-        </div>
-
-        <div class="block description">
-          <div class="link blockPage">
-            <p class="infoPage">Waiting...</p>
-            <img class="imgPage" src="./home/images/icone.png" alt="">
-          </div>
-        </div>
-
-        <div class="contentCube">
-        </div>
-
-        <div class="block description">Welcome !</div>
-
-        <div class="block">I am excited to welcome you to my site, where I showcase my personal projects. VitaLoad is a space where I highlight my ideas, creations, and passions. Each project reflects a step in my journey, and I'm eager to share my work with you. I hope you enjoy your visit and find inspiration in my projects. Happy exploring</div>
-
-      <div class="footer block">
-          <a href="https://rmbi.ch/vital" class="production link">Waiting...</a>
-          <a href="https://rmbi.ch/vital/donation" class="link">₿</a>
-      </div>
+    <main class="home-page">
+      <section class="home-intro">
+        <p class="home-eyebrow">Espace de travail</p>
+        <h1>Bienvenue sur VitaLoad</h1>
+        <p>Accède rapidement aux outils et projets disponibles.</p>
+      </section>
+      <section class="project-grid" aria-label="Projets">
+        <a class="project-card" href="./statut/">
+          <span class="project-icon" aria-hidden="true">◉</span>
+          <span class="project-name">Statut</span>
+          <span class="project-description">Consulter l’état et les ressources du serveur.</span>
+          <span class="project-open">Ouvrir le projet →</span>
+        </a>
+        <a class="project-card" href="./serveur/">
+          <span class="project-icon" aria-hidden="true">▤</span>
+          <span class="project-name">Serveur</span>
+          <span class="project-description">Gérer les fichiers du dossier de travail.</span>
+          <span class="project-open">Ouvrir le projet →</span>
+        </a>
+        <a id="storage-project-card" class="project-card" href="./stockage/">
+          <span class="project-icon" aria-hidden="true">▧</span>
+          <span class="project-name">Stockage</span>
+          <span class="project-description">Conserver des notes, images et fichiers dans un espace privé.</span>
+          <span class="project-open">Ouvrir le projet →</span>
+        </a>
+      </section>
+      <footer class="home-footer">© <span id="year"></span> VitaLoad</footer>
+    </main>
   </body>
 </html>

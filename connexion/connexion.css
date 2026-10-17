@@ -1,0 +1,51 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #0b1120;
+  color: #e8eefc;
+}
+
+body.login-page {
+  min-height: 100vh;
+  max-width: none;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(circle at top, #172746, #0b1120 58%);
+  background-attachment: fixed;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.login-card {
+  width: min(100%, 420px);
+  padding: 36px;
+  border: 1px solid #293852;
+  border-radius: 18px;
+  background: #111a2b;
+  box-shadow: 0 24px 80px #0006;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.intro {
+  margin: 12px 0 28px;
+  color: #aab8d0;
+}
+
+.login-card form {
+  display: grid;
+  gap: 10px;
+}
+
+.login-card label {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.login-card button {
+  margin-top: 14px;
+}

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Espace de stockage privé VitaLoad.">
+    <link rel="stylesheet" href="../frontend/css/style.css">
+    <link rel="stylesheet" href="./stockage.css">
+    <script defer src="../frontend/js/ipOrigins.js"></script>
+    <script defer src="../frontend/js/script.js"></script>
+    <script defer src="./stockage.js"></script>
+    <title>VitaLoad · Stockage</title>
+  </head>
+  <body class="storage-page">
+    <main class="storage-main">
+      <section id="storage-loading" class="storage-state">
+        <span class="storage-spinner" aria-hidden="true"></span>
+        <p>Vérification de l’accès sécurisé…</p>
+      </section>
+
+      <section id="storage-denied" class="storage-state storage-denied" hidden>
+        <span class="storage-state-icon" aria-hidden="true">🔒</span>
+        <h1>Accès réservé</h1>
+        <p id="storage-denied-message">Cet espace est réservé au compte administrateur.</p>
+        <a class="vl-button vl-button-secondary" href="/">Retour à l’accueil</a>
+      </section>
+
+      <section id="storage-app" hidden>
+        <header class="storage-heading">
+          <div>
+            <p class="storage-eyebrow">Espace privé · Administrateur</p>
+            <h1>Stockage</h1>
+            <p>Notes, images et fichiers réunis dans un espace personnel.</p>
+          </div>
+          <div class="quota-card">
+            <div class="quota-heading">
+              <span class="quota-icon" aria-hidden="true">▤</span>
+              <div>
+                <span class="quota-label">Espace disponible</span>
+                <strong id="quota-remaining">Calcul…</strong>
+              </div>
+            </div>
+            <div
+              id="quota-bar"
+              class="quota-track"
+              role="progressbar"
+              aria-label="Espace de stockage utilisé"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            ><span id="quota-fill"></span></div>
+            <p id="quota-summary" class="quota-summary">sur 5 Gio</p>
+          </div>
+        </header>
+
+        <section class="storage-chat status-panel" aria-label="Espace de stockage">
+          <div class="chat-heading">
+            <div>
+              <span class="chat-heading-icon" aria-hidden="true">✦</span>
+              <div>
+                <h2 id="storage-section-title">Messages</h2>
+                <p id="item-count">Chargement des éléments…</p>
+              </div>
+            </div>
+            <button id="storage-refresh" class="vl-button vl-button-secondary" type="button">Actualiser</button>
+          </div>
+
+          <div class="storage-tabs" role="tablist" aria-label="Contenu Stockage">
+            <button id="messages-tab" class="storage-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="messages-panel">Messages</button>
+            <button id="files-tab" class="storage-tab" type="button" role="tab" aria-selected="false" aria-controls="files-panel">Fichiers</button>
+          </div>
+
+          <section id="messages-panel" class="storage-tab-panel" role="tabpanel" aria-labelledby="messages-tab">
+            <div id="message-items" class="storage-items" aria-live="polite"></div>
+            <button id="load-messages-older" class="load-older" type="button" hidden>Afficher les messages plus anciens</button>
+            <p id="messages-empty" class="storage-empty" hidden>Aucun message enregistré.</p>
+            <form id="message-form" class="message-composer">
+              <label class="sr-only" for="message-content">Écrire un message</label>
+              <textarea
+                id="message-content"
+                class="vl-input message-input"
+                maxlength="262144"
+                rows="3"
+                placeholder="Écris un message…"
+              ></textarea>
+              <div class="composer-footer">
+                <span>Les messages sont inclus dans le quota de 5 Gio.</span>
+                <button id="send-message" class="vl-button" type="submit">Envoyer le message</button>
+              </div>
+            </form>
+          </section>
+
+          <section id="files-panel" class="storage-tab-panel" role="tabpanel" aria-labelledby="files-tab" hidden>
+            <div class="files-toolbar">
+              <nav id="storage-breadcrumbs" class="storage-breadcrumbs" aria-label="Chemin du dossier"></nav>
+              <div class="storage-explorer-actions">
+                <input id="storage-upload-input" type="file" multiple hidden>
+                <input id="storage-directory-input" type="file" webkitdirectory multiple hidden>
+                <button id="storage-attach" class="vl-button" type="button">
+                  <span aria-hidden="true">＋</span> Importer des fichiers
+                </button>
+                <button id="new-storage-folder" class="vl-button vl-button-secondary" type="button">Nouveau dossier</button>
+                <button id="storage-import-directory" class="vl-button vl-button-secondary" type="button">Importer un dossier</button>
+                <span id="selected-files" class="selected-files">Images et fichiers · 5 Gio au total</span>
+              </div>
+            </div>
+            <div id="file-items" class="file-grid" aria-live="polite"></div>
+            <p id="files-empty" class="storage-empty" hidden>Aucun fichier dans Stockage.</p>
+            <button id="load-files-older" class="load-older" type="button" hidden>Afficher les fichiers plus anciens</button>
+          </section>
+
+        </section>
+      </section>
+    </main>
+    <p id="storage-message" class="storage-toast" role="status" aria-live="polite" hidden></p>
+
+    <dialog id="delete-dialog" class="storage-dialog">
+      <form id="delete-form" method="dialog">
+        <p class="storage-eyebrow">Confirmation</p>
+        <h2>Supprimer cet élément ?</h2>
+        <p id="delete-description">Cette action libérera aussi l’espace utilisé.</p>
+        <div class="storage-dialog-actions">
+          <button id="delete-cancel" class="vl-button vl-button-secondary" type="button">Annuler</button>
+          <button class="vl-button vl-button-danger" type="submit">Supprimer</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="rename-dialog" class="storage-dialog">
+      <form id="rename-form">
+        <p id="rename-eyebrow" class="storage-eyebrow">Fichier</p>
+        <h2 id="rename-title">Renommer le fichier</h2>
+        <label id="rename-label" class="sr-only" for="rename-input">Nouveau nom</label>
+        <input id="rename-input" class="vl-input rename-input" type="text" maxlength="255" required>
+        <p id="rename-error" class="rename-error" role="alert"></p>
+        <div class="storage-dialog-actions">
+          <button id="rename-cancel" class="vl-button vl-button-secondary" type="button">Annuler</button>
+          <button id="rename-confirm" class="vl-button" type="submit">Renommer</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="message-edit-dialog" class="storage-dialog">
+      <form id="message-edit-form">
+        <p class="storage-eyebrow">Message</p>
+        <h2>Modifier le message</h2>
+        <label class="sr-only" for="message-edit-input">Contenu du message</label>
+        <textarea id="message-edit-input" class="vl-input message-edit-input" maxlength="262144" rows="6" required></textarea>
+        <p id="message-edit-error" class="rename-error" role="alert"></p>
+        <div class="storage-dialog-actions">
+          <button id="message-edit-cancel" class="vl-button vl-button-secondary" type="button">Annuler</button>
+          <button id="message-edit-confirm" class="vl-button" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </dialog>
+    <iframe name="storage-download-frame" title="Téléchargement de fichier" hidden></iframe>
+  </body>
+</html>
