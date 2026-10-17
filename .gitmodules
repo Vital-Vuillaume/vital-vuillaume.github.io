@@ -1,0 +1,3 @@
+[submodule "chromatica-corp"]
+	path = chromatica-corp
+	url = https://github.com/Chromatica-Corp/chromatica-corp.github.io.git
