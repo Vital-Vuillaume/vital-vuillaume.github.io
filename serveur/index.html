@@ -4,25 +4,36 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>Serveur · VitaLoad</title>
-    <link rel="stylesheet" href="../frontend/css/style.css">
-    <link rel="stylesheet" href="./serveur.css">
-    <script src="../frontend/js/ipOrigins.js" defer></script>
-    <script src="../frontend/js/script.js" defer></script>
-    <script src="./serveur.js" defer></script>
+    <meta name="description" content="Exploration, mise à jour et surveillance du serveur VitaLoad.">
+    <title>VitaLoad · Serveur</title>
+    <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-project-header">
+    <link rel="stylesheet" href="./serveur.css?v=20261101-project-header">
+    <script src="../frontend/js/ipOrigins.js?v=20261025-shutdown" defer></script>
+    <script src="../frontend/js/script.js?v=20261101-auth-header-hidden" defer></script>
+    <script src="./serveur.js?v=20261031-access-ui" defer></script>
   </head>
   <body class="panel-page">
     <header class="topbar">
-      <div>
-        <p class="vl-eyebrow">VitaLoad</p>
-        <h1>Serveur</h1>
-      </div>
       <div class="account">
         <span id="username"></span>
         <button id="logout" class="vl-button vl-button-secondary" type="button">Déconnexion</button>
       </div>
     </header>
-    <main>
+    <main class="vl-section-stack vl-page-container">
+      <section id="server-denied" class="vl-access-denied" hidden>
+        <span class="vl-access-denied-icon" aria-hidden="true">🔒</span>
+        <p class="vl-eyebrow">Accès protégé</p>
+        <h1>Accès réservé</h1>
+        <p>Votre compte ne dispose pas d’un accès au site Serveur.</p>
+        <a class="vl-button vl-button-secondary" href="/">Retour à l’accueil</a>
+      </section>
+      <div id="server-app" class="vl-section-stack">
+      <header class="vl-page-heading" aria-labelledby="server-page-title">
+        <p class="vl-eyebrow">Espace privé</p>
+        <h1 id="server-page-title">Serveur</h1>
+        <p class="vl-page-description">Explore les fichiers du backend Node.js, prépare les changements et consulte les journaux du serveur.</p>
+      </header>
+
       <section class="explorer">
         <div class="explorer-toolbar">
           <nav id="breadcrumbs" class="breadcrumbs" aria-label="Chemin du dossier"></nav>
@@ -49,7 +60,8 @@
             <h2 id="selected-file">Aucun fichier sélectionné</h2>
           </div>
           <div class="toolbar-actions">
-            <button id="save-file" class="vl-button" type="button" disabled>Enregistrer</button>
+            <button id="save-file" class="vl-button vl-button-secondary" type="button" disabled>Enregistrer le brouillon</button>
+            <button id="cancel-file-changes" class="vl-button vl-button-secondary" type="button" disabled>Annuler</button>
           </div>
         </div>
         <p id="editor-empty" class="editor-empty">Sélectionnez un fichier pour afficher et modifier son contenu.</p>
@@ -63,16 +75,58 @@
             <p class="vl-eyebrow">Outils</p>
             <h2>Terminal limité</h2>
             <p class="terminal-help">pwd · ls · cd · cat · mkdir · touch · write · mv · cp · rm</p>
+            <p class="terminal-help">Les commandes modifient le brouillon, pas le serveur directement.</p>
           </div>
           <button id="clear-terminal" class="vl-button vl-button-secondary" type="button">Effacer</button>
         </div>
         <pre id="terminal-output" class="terminal-output" aria-live="polite"></pre>
         <form id="terminal-form" class="terminal-form">
-          <label id="terminal-prompt" for="terminal-input">/VitaLoad $</label>
+          <label id="terminal-prompt" for="terminal-input">/js-backend $</label>
           <input id="terminal-input" class="vl-input" type="text" autocomplete="off" spellcheck="false" aria-label="Commande">
           <button class="vl-button" type="submit">Exécuter</button>
         </form>
       </section>
+
+      <section class="changes-panel" aria-label="Modifications en attente">
+        <div class="changes-heading">
+          <div>
+            <p class="vl-eyebrow">Brouillon</p>
+            <h2>Modifications en attente <span id="changes-count" class="changes-count">0</span></h2>
+            <p class="changes-help">L’action applique les changements puis redémarre le backend Node.js.</p>
+          </div>
+          <div class="toolbar-actions">
+            <button id="apply-changes" class="vl-button is-update-current" type="button" disabled>Mettre à jour et redémarrer</button>
+            <button id="discard-changes" class="vl-button vl-button-secondary" type="button" disabled>Tout annuler</button>
+          </div>
+        </div>
+        <ul id="changes-list" class="changes-list" aria-live="polite"></ul>
+        <p id="changes-message" class="changes-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="server-logs-panel" class="logs-panel" aria-label="Journaux du serveur" hidden>
+        <div class="logs-heading">
+          <div>
+            <p class="vl-eyebrow">Diagnostic</p>
+            <h2>Journaux du serveur</h2>
+            <p id="logs-updated" class="logs-help">Les sorties et erreurs du backend Node.js.</p>
+          </div>
+          <button id="refresh-logs" class="vl-button vl-button-secondary" type="button">Actualiser</button>
+        </div>
+        <pre id="server-logs" class="server-logs" aria-live="polite"></pre>
+        <p id="logs-message" class="logs-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="emergency-shutdown-panel" class="shutdown-panel" aria-label="Arrêt d’urgence" hidden>
+        <div class="shutdown-heading">
+          <div>
+            <p class="vl-eyebrow">Zone sensible</p>
+            <h2>Arrêt d’urgence</h2>
+            <p class="shutdown-help" role="status" aria-live="polite">Arrête le backend Node.js. Il faudra le redémarrer manuellement pour remettre le site en ligne.</p>
+          </div>
+          <button id="emergency-shutdown" class="vl-button vl-button-danger" type="button">Éteindre le serveur</button>
+        </div>
+      </section>
+      </div>
     </main>
 
     <dialog id="file-dialog" class="file-dialog">

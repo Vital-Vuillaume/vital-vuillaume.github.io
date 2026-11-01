@@ -5,43 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Espace de stockage privé VitaLoad.">
-    <link rel="stylesheet" href="../frontend/css/style.css">
-    <link rel="stylesheet" href="./stockage.css">
+    <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-project-header">
+    <link rel="stylesheet" href="./stockage.css?v=20261101-quota-full-width">
     <script defer src="../frontend/js/ipOrigins.js"></script>
-    <script defer src="../frontend/js/script.js"></script>
-    <script defer src="./stockage.js"></script>
+    <script defer src="../frontend/js/script.js?v=20261101-auth-header-hidden"></script>
+    <script defer src="./stockage.js?v=20261031-access-ui"></script>
     <title>VitaLoad · Stockage</title>
   </head>
   <body class="storage-page">
-    <main class="storage-main">
-      <section id="storage-loading" class="storage-state">
-        <span class="storage-spinner" aria-hidden="true"></span>
-        <p>Vérification de l’accès sécurisé…</p>
-      </section>
-
-      <section id="storage-denied" class="storage-state storage-denied" hidden>
-        <span class="storage-state-icon" aria-hidden="true">🔒</span>
+    <main class="storage-main vl-page-container">
+      <section id="storage-denied" class="vl-access-denied" hidden>
+        <span class="vl-access-denied-icon" aria-hidden="true">🔒</span>
+        <p class="storage-eyebrow">Accès protégé</p>
         <h1>Accès réservé</h1>
-        <p id="storage-denied-message">Cet espace est réservé au compte administrateur.</p>
+        <p id="storage-denied-message">Votre compte ne dispose pas d’un accès au site Stockage.</p>
         <a class="vl-button vl-button-secondary" href="/">Retour à l’accueil</a>
       </section>
 
-      <section id="storage-app" hidden>
-        <header class="storage-heading">
-          <div>
-            <p class="storage-eyebrow">Espace privé · Administrateur</p>
-            <h1>Stockage</h1>
-            <p>Notes, images et fichiers réunis dans un espace personnel.</p>
-          </div>
-          <div class="quota-card">
-            <div class="quota-heading">
+      <section id="storage-app" class="vl-section-stack" hidden>
+        <header class="vl-page-heading">
+          <p class="vl-eyebrow">Espace privé</p>
+          <h1>Stockage</h1>
+          <p class="vl-page-description">Notes, images et fichiers réunis dans un espace personnel.</p>
+        </header>
+        <div class="quota-group">
+          <button id="quota-toggle" class="quota-card" type="button" aria-haspopup="dialog" aria-controls="quota-details">
+            <span class="quota-heading">
               <span class="quota-icon" aria-hidden="true">▤</span>
-              <div>
+              <span>
                 <span class="quota-label">Espace disponible</span>
                 <strong id="quota-remaining">Calcul…</strong>
-              </div>
-            </div>
-            <div
+              </span>
+            </span>
+            <span
               id="quota-bar"
               class="quota-track"
               role="progressbar"
@@ -49,10 +45,11 @@
               aria-valuemin="0"
               aria-valuemax="100"
               aria-valuenow="0"
-            ><span id="quota-fill"></span></div>
-            <p id="quota-summary" class="quota-summary">sur 5 Gio</p>
-          </div>
-        </header>
+            ><span id="quota-fill"></span></span>
+            <span id="quota-summary" class="quota-summary">sur 5 Gio</span>
+          </button>
+        </div>
+        <p id="storage-message" class="storage-status" role="status" aria-live="polite" hidden></p>
 
         <section class="storage-chat status-panel" aria-label="Espace de stockage">
           <div class="chat-heading">
@@ -69,6 +66,7 @@
           <div class="storage-tabs" role="tablist" aria-label="Contenu Stockage">
             <button id="messages-tab" class="storage-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="messages-panel">Messages</button>
             <button id="files-tab" class="storage-tab" type="button" role="tab" aria-selected="false" aria-controls="files-panel">Fichiers</button>
+            <button id="trash-tab" class="storage-tab" type="button" role="tab" aria-selected="false" aria-controls="trash-panel">Corbeille</button>
           </div>
 
           <section id="messages-panel" class="storage-tab-panel" role="tabpanel" aria-labelledby="messages-tab">
@@ -97,32 +95,128 @@
               <div class="storage-explorer-actions">
                 <input id="storage-upload-input" type="file" multiple hidden>
                 <input id="storage-directory-input" type="file" webkitdirectory multiple hidden>
-                <button id="storage-attach" class="vl-button" type="button">
-                  <span aria-hidden="true">＋</span> Importer des fichiers
-                </button>
+                <button id="new-storage-file" class="vl-button vl-button-secondary" type="button">Nouveau fichier</button>
                 <button id="new-storage-folder" class="vl-button vl-button-secondary" type="button">Nouveau dossier</button>
+                <button id="storage-attach" class="vl-button vl-button-secondary" type="button">Importer des fichiers</button>
                 <button id="storage-import-directory" class="vl-button vl-button-secondary" type="button">Importer un dossier</button>
                 <span id="selected-files" class="selected-files">Images et fichiers · 5 Gio au total</span>
               </div>
+            </div>
+            <div class="file-list-controls">
+              <label class="file-search">
+                <span class="sr-only">Rechercher un fichier ou dossier</span>
+                <input id="storage-search" class="vl-input" type="search" maxlength="255" placeholder="Rechercher dans ce dossier…">
+              </label>
+              <label class="file-sort">
+                <span>Trier par</span>
+                <select id="storage-sort" class="vl-input">
+                  <option value="name-asc">Nom : A à Z</option>
+                  <option value="name-desc">Nom : Z à A</option>
+                  <option value="date-newest">Date : plus récent</option>
+                  <option value="date-oldest">Date : plus ancien</option>
+                  <option value="size-largest">Taille : plus grande</option>
+                  <option value="size-smallest">Taille : plus petite</option>
+                  <option value="type">Type</option>
+                </select>
+              </label>
             </div>
             <div id="file-items" class="file-grid" aria-live="polite"></div>
             <p id="files-empty" class="storage-empty" hidden>Aucun fichier dans Stockage.</p>
             <button id="load-files-older" class="load-older" type="button" hidden>Afficher les fichiers plus anciens</button>
           </section>
 
+          <section id="trash-panel" class="storage-tab-panel storage-trash" role="tabpanel" aria-labelledby="trash-tab" hidden>
+            <p class="trash-notice">Les éléments de la corbeille restent comptés dans le quota jusqu’à leur suppression définitive.</p>
+            <div id="trash-items" class="trash-list" aria-live="polite"></div>
+            <p id="trash-empty" class="storage-empty" hidden>La corbeille est vide.</p>
+            <button id="load-trash-older" class="load-older" type="button" hidden>Afficher les éléments plus anciens</button>
+          </section>
+        </section>
+        <section id="file-editor-panel" class="storage-editor-panel" aria-label="Éditeur de fichier" hidden>
+          <div class="storage-editor-heading">
+            <div>
+              <p class="storage-eyebrow">Édition</p>
+              <h2 id="file-editor-title">Aucun fichier sélectionné</h2>
+            </div>
+            <div class="storage-editor-actions">
+              <button id="save-storage-file" class="vl-button vl-button-secondary" type="button" disabled>Enregistrer</button>
+              <button id="cancel-storage-file-changes" class="vl-button vl-button-secondary" type="button" disabled>Annuler</button>
+            </div>
+          </div>
+          <textarea id="file-edit-input" class="vl-input file-edit-input" spellcheck="false" aria-label="Contenu du fichier" hidden></textarea>
+          <p id="file-edit-error" class="storage-editor-message" role="status" aria-live="polite"></p>
         </section>
       </section>
     </main>
-    <p id="storage-message" class="storage-toast" role="status" aria-live="polite" hidden></p>
+
+    <dialog id="quota-details" class="storage-dialog quota-dialog" aria-labelledby="quota-dialog-title">
+      <div class="quota-details">
+        <p class="storage-eyebrow">Espace de stockage</p>
+        <h2 id="quota-dialog-title">Détail du quota</h2>
+        <section class="quota-total-usage" aria-label="Utilisation totale du quota">
+          <div class="quota-progress-label">
+            <span>Quota utilisé</span>
+            <strong id="quota-used-percent">0 %</strong>
+          </div>
+          <div id="quota-total-track" class="quota-detail-track" role="progressbar" aria-label="Pourcentage total utilisé" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="quota-total-fill"></span>
+          </div>
+          <p id="quota-overview">— utilisé sur —</p>
+        </section>
+        <section class="quota-breakdown" aria-label="Utilisation par type">
+          <div class="quota-breakdown-item">
+            <div class="quota-progress-label">
+              <span>Fichiers</span>
+              <strong id="quota-files-percent">0 %</strong>
+            </div>
+            <div id="quota-files-track" class="quota-detail-track" role="progressbar" aria-label="Quota utilisé par les fichiers" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="quota-files-fill"></span>
+            </div>
+            <p><span id="quota-files-size">—</span><span id="quota-files-count"></span></p>
+          </div>
+          <div class="quota-breakdown-item">
+            <div class="quota-progress-label">
+              <span>Messages</span>
+              <strong id="quota-messages-percent">0 %</strong>
+            </div>
+            <div id="quota-messages-track" class="quota-detail-track" role="progressbar" aria-label="Quota utilisé par les messages" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="quota-messages-fill"></span>
+            </div>
+            <p><span id="quota-messages-size">—</span><span id="quota-messages-count"></span></p>
+          </div>
+        </section>
+        <dl>
+          <div><dt>Utilisé</dt><dd id="quota-used-detail">—</dd></div>
+          <div><dt>Restant</dt><dd id="quota-remaining-detail">—</dd></div>
+          <div><dt>Capacité totale</dt><dd id="quota-capacity-detail">—</dd></div>
+        </dl>
+        <div class="storage-dialog-actions">
+          <button id="quota-dialog-close" class="vl-button vl-button-secondary" type="button">Fermer</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="file-preview-dialog" class="storage-dialog file-preview-dialog" aria-labelledby="file-preview-title">
+      <div class="file-preview-content">
+        <div class="file-preview-heading">
+          <div>
+            <p class="storage-eyebrow">Aperçu</p>
+            <h2 id="file-preview-title">Fichier</h2>
+          </div>
+          <button id="file-preview-close" class="vl-button vl-button-secondary" type="button">Fermer</button>
+        </div>
+        <div id="file-preview-body" class="file-preview-body"></div>
+      </div>
+    </dialog>
 
     <dialog id="delete-dialog" class="storage-dialog">
       <form id="delete-form" method="dialog">
         <p class="storage-eyebrow">Confirmation</p>
-        <h2>Supprimer cet élément ?</h2>
-        <p id="delete-description">Cette action libérera aussi l’espace utilisé.</p>
+        <h2 id="delete-dialog-title">Mettre dans la corbeille ?</h2>
+        <p id="delete-description">L’élément pourra être restauré depuis la corbeille.</p>
         <div class="storage-dialog-actions">
           <button id="delete-cancel" class="vl-button vl-button-secondary" type="button">Annuler</button>
-          <button class="vl-button vl-button-danger" type="submit">Supprimer</button>
+          <button id="delete-confirm" class="vl-button vl-button-danger" type="submit">Mettre dans la corbeille</button>
         </div>
       </form>
     </dialog>

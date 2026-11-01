@@ -164,33 +164,6 @@ a {
   color: var(--textColor);
 }
 
-html {
-  scrollbar-color: #0284c7 transparent;
-  scrollbar-width: thin;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  cursor: pointer;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #0284c7;
-  border-radius: 20px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-    cursor: pointer;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 @media screen and (max-width: 1460px) {
   .nav {
     width: calc(100% - 40px);
@@ -280,10 +253,50 @@ html {
   box-shadow: 0 0 0 3px #38bdf833;
 }
 
+@media (max-width: 768px) {
+  html body input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  html body textarea,
+  html body select {
+    font-size: 16px;
+  }
+}
+
 .vl-message {
   min-height: 1.4em;
   margin: 8px 0 0;
   color: #fca5a5;
+}
+
+body .vl-access-denied {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid #293852;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #121d30f2, #0e1727f2);
+  box-shadow: 0 14px 34px #0002;
+  color: #e8eefc;
+}
+
+.vl-access-denied .vl-access-denied-icon {
+  font-size: 1.8rem;
+}
+
+.vl-access-denied .vl-eyebrow {
+  margin: 0;
+}
+
+.vl-access-denied h1 {
+  margin: 0;
+  color: #f1f5ff;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.vl-access-denied p:not(.vl-eyebrow) {
+  margin: 0;
+  color: #99a9c2;
+  line-height: 1.5;
 }
 
 .vl-card {
@@ -294,11 +307,43 @@ html {
   box-shadow: 0 12px 32px #0003;
 }
 
+.vl-section-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.vl-page-container {
+  width: min(1320px, 100%);
+  margin-inline: auto;
+}
+
+.vl-page-heading h1 {
+  margin: 0;
+  color: #f1f5ff;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  letter-spacing: -0.045em;
+}
+
+.vl-page-description {
+  margin: 10px 0 0;
+  color: #aab8d0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 body.vl-modern-page {
   display: block;
+  min-height: 100vh;
   max-width: none;
   margin: 0;
-  padding-top: 112px;
+  padding: 112px 24px 32px;
+  background:
+    radial-gradient(ellipse at 12% 0%, #172746 0, transparent 42%),
+    radial-gradient(ellipse at 90% 18%, #10293a 0, transparent 32%),
+    #0b1120;
+  background-attachment: fixed;
+  color: #e8eefc;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 body.vl-modern-page.login-page {
@@ -378,9 +423,13 @@ body.vl-modern-page.login-page {
   color: #7dd3fc;
 }
 
-@media (max-width: 520px) {
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
   body.vl-modern-page {
-    padding-top: 100px;
+    padding: 100px 16px 24px;
   }
 
   body.vl-modern-page.login-page {

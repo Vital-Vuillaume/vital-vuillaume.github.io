@@ -53,6 +53,7 @@ function installVitaLoadHeader() {
         panelLogout.type = 'button';
         panelLogout.textContent = 'Déconnexion';
     }
+    panelLogout.hidden = true;
     const panelLogin = document.createElement('a');
     panelLogin.className = 'vl-panel-login';
     panelLogin.href = '/connexion/';
@@ -117,7 +118,9 @@ window.VitaLoadPanelAuth = {
             throw new Error('Votre session a expiré.');
         }
         if (!response.ok) {
-            throw new Error(data.error || `La requête a échoué (${response.status}).`);
+            const requestError = new Error(data.error || `La requête a échoué (${response.status}).`);
+            requestError.status = response.status;
+            throw requestError;
         }
         return data;
     },
@@ -135,6 +138,7 @@ const blockPage = document.querySelector(".blockPage");
 async function updatePanelHeader() {
     const sessionId = window.VitaLoadPanelAuth.getSessionId();
     if (!sessionId) {
+        panelHeader.panelLogout.hidden = true;
         panelHeader.panelLogin.hidden = false;
         panelHeader.panelAccount.hidden = true;
         return;
@@ -155,6 +159,7 @@ async function updatePanelHeader() {
         }
         if (response.status === 401) {
             window.VitaLoadPanelAuth.clearSession();
+            panelHeader.panelLogout.hidden = true;
             panelHeader.panelLogin.hidden = false;
             panelHeader.panelAccount.hidden = true;
             return;
@@ -164,13 +169,14 @@ async function updatePanelHeader() {
         }
 
         panelHeader.panelUsername.textContent = data.username;
+        panelHeader.panelLogout.hidden = false;
         panelHeader.panelAccount.hidden = false;
         panelHeader.panelLogin.hidden = true;
     } catch (error) {
         console.error('Impossible de vérifier la session VitaLoad :', error);
-        panelHeader.panelUsername.textContent = 'Session indisponible';
-        panelHeader.panelAccount.hidden = false;
-        panelHeader.panelLogin.hidden = true;
+        panelHeader.panelLogout.hidden = true;
+        panelHeader.panelAccount.hidden = true;
+        panelHeader.panelLogin.hidden = false;
     }
 }
 

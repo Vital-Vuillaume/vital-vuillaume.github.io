@@ -10,12 +10,9 @@ body.panel-page {
   min-height: 100vh;
   max-width: none;
   margin: 0;
-  padding: 100px 0 0;
+  padding: 100px 24px 0;
   overflow-x: hidden;
   overflow-y: auto;
-  background: #0b1120;
-  background-image: none;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 body.panel-page.vl-modern-page {
@@ -51,14 +48,13 @@ body.panel-page.vl-modern-page {
 }
 
 main {
-  display: grid;
-  gap: 18px;
-  width: min(1440px, 100%);
-  margin: 0 auto;
-  padding: 24px;
+  padding: 24px 0;
 }
 
 .explorer,
+.changes-panel,
+.logs-panel,
+.shutdown-panel,
 .editor-panel,
 .terminal-panel {
   overflow: hidden;
@@ -68,6 +64,9 @@ main {
 }
 
 .explorer-toolbar,
+.changes-heading,
+.logs-heading,
+.shutdown-heading,
 .editor-heading,
 .terminal-heading {
   display: flex;
@@ -107,7 +106,6 @@ main {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
   gap: 12px;
-  min-height: 150px;
   padding: 18px;
 }
 
@@ -198,6 +196,10 @@ main {
   font-size: 0.72rem;
 }
 
+.item-action-download {
+  color: #dbeafe;
+}
+
 .empty-state,
 .editor-empty {
   padding: 22px 18px;
@@ -206,16 +208,181 @@ main {
 }
 
 .upload-message {
-  min-height: 1.4em;
   margin: 0;
   padding: 0 18px 12px;
   color: #a7f3d0;
   font-size: 0.85rem;
 }
 
+.explorer .vl-message:empty,
+.explorer .upload-message:empty {
+  display: none;
+}
+
+.changes-panel,
+.logs-panel,
+.shutdown-panel,
 .editor-panel,
 .terminal-panel {
   padding: 18px;
+}
+
+.changes-heading {
+  padding: 0 0 12px;
+}
+
+.logs-heading {
+  padding: 0 0 12px;
+}
+
+.shutdown-heading {
+  padding: 0;
+}
+
+.shutdown-heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.shutdown-help {
+  max-width: 720px;
+  margin: 7px 0 0;
+  color: #fca5a5;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.logs-heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.logs-help,
+.logs-message {
+  margin: 7px 0 0;
+  color: #99a9c2;
+  font-size: 0.84rem;
+}
+
+.server-logs {
+  min-height: 180px;
+  max-height: 460px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border: 1px solid #293852;
+  border-radius: 8px;
+  background: #070c14;
+  color: #c2f3d4;
+  font: 0.84rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.logs-message.is-error {
+  color: #fca5a5;
+}
+
+.changes-heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.changes-help {
+  margin: 7px 0 0;
+  color: #99a9c2;
+  font-size: 0.84rem;
+}
+
+.changes-count {
+  display: inline-grid;
+  min-width: 25px;
+  min-height: 25px;
+  margin-left: 5px;
+  place-items: center;
+  border-radius: 999px;
+  background: #26354d;
+  color: #dbeafe;
+  font-size: 0.8rem;
+  vertical-align: 2px;
+}
+
+.changes-list {
+  display: grid;
+  gap: 7px;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.change-item {
+  display: grid;
+  grid-template-columns: minmax(105px, auto) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid #293852;
+  border-radius: 8px;
+  background: #0d1626;
+}
+
+.change-undo {
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 0.76rem;
+}
+
+.change-action {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.change-action.is-added {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+.change-action.is-modified {
+  background: #78350f;
+  color: #fde68a;
+}
+
+.change-action.is-deleted {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.change-path {
+  overflow: hidden;
+  color: #dbeafe;
+  font: 0.84rem ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.change-kind {
+  color: #99a9c2;
+  font-size: 0.76rem;
+}
+
+.changes-message {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  color: #99a9c2;
+  font-size: 0.84rem;
+}
+
+.changes-message.is-error {
+  color: #fca5a5;
+}
+
+.changes-message.is-success {
+  color: #86efac;
 }
 
 .editor-heading,
@@ -226,6 +393,38 @@ main {
 .editor-heading .vl-eyebrow,
 .terminal-heading .vl-eyebrow {
   margin-bottom: 4px;
+}
+
+.editor-heading .toolbar-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+#apply-changes.is-update-current {
+  border-color: #15803d;
+  background: #166534;
+}
+
+#apply-changes.is-update-current:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+#apply-changes.is-update-pending {
+  border-color: #b91c1c;
+  background: #991b1b;
+}
+
+#apply-changes.is-update-pending:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.editor-panel > .vl-message.is-unsaved {
+  color: #fca5a5;
+}
+
+.editor-panel > .vl-message.is-saved {
+  color: #86efac;
 }
 
 .file-content {
@@ -354,6 +553,11 @@ main {
 }
 
 @media (max-width: 720px) {
+  body.panel-page {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
   .file-grid {
     grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
     gap: 7px;
@@ -377,6 +581,9 @@ main {
 @media (max-width: 520px) {
   .topbar,
   .explorer-toolbar,
+  .changes-heading,
+  .logs-heading,
+  .shutdown-heading,
   .editor-heading,
   .terminal-heading {
     align-items: flex-start;
@@ -389,8 +596,29 @@ main {
     flex-wrap: wrap;
   }
 
+  .change-item {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 7px;
+  }
+
+  .change-path {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .change-kind {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .change-undo {
+    grid-column: 2 / -1;
+    grid-row: 3;
+    justify-self: end;
+  }
+
   main {
-    padding: 16px;
+    padding: 16px 0;
   }
 
   body.panel-page.vl-modern-page {

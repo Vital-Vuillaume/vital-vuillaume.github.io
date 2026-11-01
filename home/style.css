@@ -1,15 +1,5 @@
-body.vl-modern-page {
-  min-height: 100vh;
-  background: radial-gradient(ellipse at top, #172746, #0b1120 58%);
-  background-attachment: fixed;
-  color: #e8eefc;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-}
-
 .home-page {
-  width: min(1080px, 100%);
-  margin: 0 auto;
-  padding: clamp(32px, 7vw, 88px) 24px 28px;
+  padding: clamp(32px, 7vw, 88px) 0 28px;
 }
 
 .home-intro {
@@ -104,10 +94,6 @@ body.vl-modern-page {
 }
 
 @media (max-width: 520px) {
-  .home-page {
-    padding-inline: 16px;
-  }
-
   .project-card {
     min-height: 220px;
   }

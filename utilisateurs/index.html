@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-project-header">
+    <link rel="stylesheet" href="./utilisateurs.css?v=20261101-project-header">
+    <script defer src="../frontend/js/ipOrigins.js"></script>
+    <script defer src="../frontend/js/script.js?v=20261101-auth-header-hidden"></script>
+    <script defer src="./utilisateurs.js?v=20261031-access-ui"></script>
+    <title>VitaLoad · Utilisateurs</title>
+  </head>
+  <body class="users-page">
+    <main class="users-main vl-section-stack vl-page-container">
+      <section id="users-denied" class="vl-access-denied" hidden>
+        <span class="vl-access-denied-icon" aria-hidden="true">🔒</span>
+        <p class="users-eyebrow">Accès protégé</p>
+        <h1>Accès réservé</h1>
+        <p id="users-denied-message">Votre compte ne dispose pas d’un accès à ce projet.</p>
+        <a class="vl-button vl-button-secondary" href="/">Retour à l’accueil</a>
+      </section>
+
+      <section id="users-app" class="vl-section-stack" hidden>
+        <header class="vl-page-heading">
+          <p class="vl-eyebrow">Espace privé</p>
+          <h1>Utilisateurs</h1>
+          <p class="vl-page-description">Gère les comptes et choisis les projets auxquels ils peuvent accéder.</p>
+        </header>
+
+        <section class="users-panel" aria-labelledby="create-user-title">
+          <div class="users-panel-heading">
+            <div>
+              <p class="users-eyebrow">Nouveau compte</p>
+              <h2 id="create-user-title">Ajouter un utilisateur</h2>
+            </div>
+          </div>
+          <form id="create-user-form" class="create-user-form">
+            <label>
+              <span>Nom d’utilisateur</span>
+              <input class="vl-input" name="username" type="text" minlength="1" maxlength="80" autocomplete="off" required>
+            </label>
+            <label>
+              <span>Mot de passe</span>
+              <input class="vl-input" name="password" type="password" minlength="5" maxlength="72" autocomplete="new-password" required>
+            </label>
+            <label>
+              <span>Rôle</span>
+              <select class="vl-input" name="role">
+                <option value="admin">Admin</option>
+                <option value="superadmin">Superadmin</option>
+              </select>
+            </label>
+            <fieldset class="site-access-fields">
+              <legend>Sites autorisés</legend>
+              <label><input type="checkbox" name="allowedSites" value="serveur"><span>Serveur</span></label>
+              <label><input type="checkbox" name="allowedSites" value="stockage"><span>Stockage</span></label>
+              <small>Statut est accessible à tous les comptes.</small>
+            </fieldset>
+            <button class="vl-button" type="submit">Créer le compte</button>
+            <p id="create-user-error" class="users-error" role="alert"></p>
+          </form>
+        </section>
+
+        <section class="users-panel" aria-labelledby="accounts-title">
+          <div class="users-panel-heading">
+            <div>
+              <p class="users-eyebrow">Comptes existants</p>
+              <h2 id="accounts-title">Utilisateurs</h2>
+            </div>
+            <button id="refresh-users" class="vl-button vl-button-secondary" type="button">Actualiser</button>
+          </div>
+          <p class="users-help">Admin accède aux sites qui lui sont attribués. Superadmin accède à tous les projets et gère les comptes.</p>
+          <div id="users-list" class="users-list" aria-live="polite"></div>
+          <p id="users-empty" class="users-empty" hidden>Aucun compte à afficher.</p>
+          <p id="users-status" class="users-status" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

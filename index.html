@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8"/>
     <meta name="description" content="VitaLoad est une plateforme d'hébergement pour mes projets web.">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     
     <meta property="og:title" content="VitaLoad - Hébergement web">
     <meta property="og:description" content="VitaLoad est une plateforme d'hébergement pour vos projets web.">
@@ -20,21 +20,20 @@
     
     <link rel="icon" type="image/svg+xml" href="./frontend/images/icon.svg">
 
-    <link rel="stylesheet" href="./frontend/css/style.css"/>
-
-    <link rel="stylesheet" href="./home/style.css"/>
+    <link rel="stylesheet" href="./frontend/css/style.css?v=20261101-page-gutters"/>
+    <link rel="stylesheet" href="./home/style.css?v=20261101-page-gutters"/>
 
 
     <script defer src="./frontend/js/ipOrigins.js"></script>
-    <script defer src="./frontend/js/script.js"></script>
+    <script defer src="./frontend/js/script.js?v=20261101-auth-header-hidden"></script>
 
-    <script defer src="./home/home.js"></script>
+    <script defer src="./home/home.js?v=20261031-roles"></script>
 
     <title>VitaLoad · Accueil</title>
   </head>
 
   <body>
-    <main class="home-page">
+    <main class="home-page vl-page-container">
       <section class="home-intro">
         <p class="home-eyebrow">Espace de travail</p>
         <h1>Bienvenue sur VitaLoad</h1>
@@ -47,17 +46,29 @@
           <span class="project-description">Consulter l’état et les ressources du serveur.</span>
           <span class="project-open">Ouvrir le projet →</span>
         </a>
-        <a class="project-card" href="./serveur/">
+        <a class="project-card" data-site-id="serveur" href="./serveur/">
           <span class="project-icon" aria-hidden="true">▤</span>
           <span class="project-name">Serveur</span>
           <span class="project-description">Gérer les fichiers du dossier de travail.</span>
           <span class="project-open">Ouvrir le projet →</span>
         </a>
-        <a id="storage-project-card" class="project-card" href="./stockage/">
+        <a id="storage-project-card" class="project-card" data-site-id="stockage" href="./stockage/">
           <span class="project-icon" aria-hidden="true">▧</span>
           <span class="project-name">Stockage</span>
           <span class="project-description">Conserver des notes, images et fichiers dans un espace privé.</span>
           <span class="project-open">Ouvrir le projet →</span>
+        </a>
+        <a id="users-project-card" class="project-card" href="./utilisateurs/">
+          <span class="project-icon" aria-hidden="true">♙</span>
+          <span class="project-name">Utilisateurs</span>
+          <span class="project-description">Gérer les comptes, les rôles et les accès aux projets.</span>
+          <span class="project-open">Gérer les comptes →</span>
+        </a>
+        <a class="project-card" href="./videos/">
+          <span class="project-icon" aria-hidden="true">▶</span>
+          <span class="project-name">Vidéos</span>
+          <span class="project-description">Créer une bibliothèque de films et de séries, locale ou partagée.</span>
+          <span class="project-open">Ouvrir la vidéothèque →</span>
         </a>
       </section>
       <footer class="home-footer">© <span id="year"></span> VitaLoad</footer>
