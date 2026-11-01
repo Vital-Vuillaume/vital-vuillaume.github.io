@@ -1,6 +1,6 @@
-const ipServer = "localhost:3000";
+const ipServer = "83.77.193.124:443";
 // Change this value to "proxy" to route /vital/api requests through the PHP proxy.
-const apiMode = "direct";
+const apiMode = "proxy";
 const proxyApiUrl = "https://rmbi.ch/vital/api/proxy.php";
 
 const port = ipServer.split(":")[1];
