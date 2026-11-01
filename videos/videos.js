@@ -72,6 +72,7 @@ let explorerEntries = [];
 let explorerRootName = '';
 let explorerPath = '';
 let selectedPaths = new Set();
+const panelAuth = window.VitaLoadPanelAuth;
 
 function requestPromise(request) {
   return new Promise((resolve, reject) => {
@@ -591,16 +592,24 @@ async function renderLocalLibrary() {
   await updateLocalStorage(collections);
 }
 
+async function loadSharedCollections() {
+  const url = window.config.getApiUrl('/vital/api/videos/shared');
+  const response = await fetch(url);
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`La bibliothèque publique a renvoyé une réponse invalide (${response.status}).`);
+  }
+  if (!response.ok) {
+    throw new Error(data.error || 'Impossible de charger la bibliothèque publique.');
+  }
+  return data;
+}
+
 async function loadSharedLibrary() {
   try {
-    const response = await fetch('/vital/api/videos/shared');
-    let data;
-    try {
-      data = await response.json();
-    } catch {
-      throw new Error(`La bibliothèque publique a renvoyé une réponse invalide (${response.status}).`);
-    }
-    if (!response.ok) throw new Error(data.error || 'Impossible de charger la bibliothèque publique.');
+    const data = await loadSharedCollections();
     sharedLibraryMessage.hidden = true;
     setMessage(sharedLibraryMessage, '');
     sharedLibrary.replaceChildren();
@@ -626,14 +635,9 @@ async function loadSharedLibrary() {
 }
 
 async function detectSuperadmin() {
-  const sessionId = localStorage.getItem(sessionKey);
-  if (!sessionId) return;
+  if (!panelAuth.getSessionId()) return;
   try {
-    const response = await fetch('/vital/api/panel/auth/session', {
-      headers: { 'X-Panel-Session': sessionId }
-    });
-    if (!response.ok) return;
-    const session = await response.json();
+    const session = await panelAuth.request('/vital/api/panel/auth/session');
     isSuperadmin = session.role === 'superadmin';
     if (isSuperadmin) {
       uploadDestinationField.hidden = false;
@@ -645,37 +649,14 @@ async function detectSuperadmin() {
 }
 
 function postSharedVideos(entries, type, title) {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append('type', type);
-    formData.append('title', title);
-    formData.append('entries', JSON.stringify(entries.map(({ details }) => details)));
-    for (const entry of entries) formData.append('files', entry.file, entry.file.name);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/vital/api/videos/upload');
-    xhr.setRequestHeader('X-Panel-Session', localStorage.getItem(sessionKey));
-    xhr.upload.addEventListener('progress', (event) => {
-      if (!event.lengthComputable) return;
-      uploadProgress.value = Math.round(event.loaded / event.total * 100);
-    });
-    xhr.addEventListener('load', () => {
-      let data;
-      try {
-        data = JSON.parse(xhr.responseText || '{}');
-      } catch {
-        reject(new Error('Le serveur a renvoyé une réponse invalide.'));
-        return;
-      }
-      if (xhr.status < 200 || xhr.status >= 300) {
-        reject(new Error(data.error || `Import refusé (${xhr.status}).`));
-        return;
-      }
-      resolve(data);
-    });
-    xhr.addEventListener('error', () => reject(new Error('La connexion a échoué pendant le dépôt vidéo.')));
-    xhr.addEventListener('abort', () => reject(new Error('Le dépôt vidéo a été interrompu.')));
-    xhr.send(formData);
+  const formData = new FormData();
+  formData.append('type', type);
+  formData.append('title', title);
+  formData.append('entries', JSON.stringify(entries.map(({ details }) => details)));
+  for (const entry of entries) formData.append('files', entry.file, entry.file.name);
+  return panelAuth.request('/vital/api/videos/upload', {
+    method: 'POST',
+    body: formData
   });
 }
 
@@ -762,7 +743,7 @@ async function handleUpload(event) {
       : displayName(entries[0].file.name);
     uploadSubmit.disabled = true;
     uploadProgress.hidden = false;
-    uploadProgress.value = 0;
+    uploadProgress.removeAttribute('value');
     const shareWithEveryone = isSuperadmin && uploadDestination.value === 'shared';
     if (shareWithEveryone) {
       const data = await postSharedVideos(entries, uploadType.value, title);
@@ -791,6 +772,7 @@ async function handleUpload(event) {
     setMessage(uploadMessage, quotaMessage, true);
   } finally {
     uploadSubmit.disabled = false;
+    uploadProgress.value = 0;
     uploadProgress.hidden = true;
   }
 }
@@ -914,7 +896,7 @@ async function handleCollectionAction(event) {
     if (action === 'play') {
       const collections = source === 'local'
         ? await getLocalCollections()
-        : (await (await fetch('/vital/api/videos/shared')).json()).collections;
+        : await loadSharedCollections();
       const collection = collections.find((item) => item.id === collectionId);
       if (!collection) throw new Error('Film ou série introuvable.');
       await openPlayer(collection, source);
@@ -929,13 +911,9 @@ async function handleCollectionAction(event) {
       await renderLocalLibrary();
       return;
     }
-    const sessionId = localStorage.getItem(sessionKey);
-    const response = await fetch(`/vital/api/videos/${encodeURIComponent(collectionId)}`, {
-      method: 'DELETE',
-      headers: { 'X-Panel-Session': sessionId }
+    const data = await panelAuth.request(`/vital/api/videos/${encodeURIComponent(collectionId)}`, {
+      method: 'DELETE'
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Suppression impossible.');
     sharedLibrary.replaceChildren();
     for (const collection of data.collections) renderCollection(sharedLibrary, collection, 'shared');
     sharedEmpty.hidden = data.collections.length > 0;
