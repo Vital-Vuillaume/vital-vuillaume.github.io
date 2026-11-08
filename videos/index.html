@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Bibliothèque de films et séries VitaLoad.">
     <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-auth-header-hidden">
-    <link rel="stylesheet" href="./videos.css?v=20261108-fullscreen-black-bars">
+    <link rel="stylesheet" href="./videos.css?v=20261108-shared-local-cache">
     <script defer src="../frontend/js/ipOrigins.js"></script>
     <script defer src="../frontend/js/script.js?v=20261101-auth-header-hidden"></script>
-    <script defer src="./videos.js?v=20261108-playback-interruption"></script>
+    <script defer src="./videos.js?v=20261108-shared-local-cache"></script>
     <title>VitaLoad · Vidéos</title>
   </head>
   <body class="video-page vl-modern-page">
@@ -56,6 +56,7 @@
             </div>
             <progress id="shared-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace serveur utilisé"></progress>
             <p id="shared-storage-note" class="storage-note">Les vidéos partagées sont visibles par tous.</p>
+            <p class="storage-note">Au premier visionnage, chaque vidéo partagée est téléchargée puis mise en cache sur cet appareil. Son espace libre peut donc diminuer.</p>
             <div id="shared-storage-details" class="storage-details"></div>
             <p id="shared-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque partagée.</p>
           </article>
@@ -163,6 +164,7 @@
             </button>
           </div>
         </div>
+        <progress id="shared-download-progress" class="shared-download-progress" max="100" hidden aria-label="Téléchargement de la vidéo"></progress>
         <div class="player-toolbar">
           <label class="player-option" id="season-option" hidden>
             <span>Saison</span>

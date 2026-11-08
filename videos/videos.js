@@ -1,5 +1,5 @@
 const databaseName = 'vitaload-video-library';
-const databaseVersion = 1;
+const databaseVersion = 2;
 const allowedExtensions = new Set([
   '3gp', 'avi', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ogv', 'ts', 'webm'
 ]);
@@ -48,6 +48,7 @@ const playerTitle = document.getElementById('player-title');
 const playerSubtitle = document.getElementById('player-subtitle');
 const playerKind = document.getElementById('player-kind');
 const playerMessage = document.getElementById('player-message');
+const sharedDownloadProgress = document.getElementById('shared-download-progress');
 const playerShell = document.querySelector('.player-shell');
 const playPauseButton = document.getElementById('player-play-pause');
 const seekInput = document.getElementById('player-seek');
@@ -71,6 +72,7 @@ let currentVideoUrl = '';
 let databasePromise;
 let fullscreenControlsTimer;
 let playbackGeneration = 0;
+let sharedDownloadController;
 const panelAuth = window.VitaLoadPanelAuth;
 
 function isPlaybackInterrupted(error) {
@@ -111,6 +113,9 @@ function openDatabase() {
       if (!database.objectStoreNames.contains('videos')) {
         const store = database.createObjectStore('videos', { keyPath: 'id' });
         store.createIndex('collectionId', 'collectionId', { unique: false });
+      }
+      if (!database.objectStoreNames.contains('sharedVideos')) {
+        database.createObjectStore('sharedVideos', { keyPath: 'id' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -158,6 +163,25 @@ async function getLocalCollections() {
 async function getLocalVideo(id) {
   const database = await openDatabase();
   return requestPromise(database.transaction('videos').objectStore('videos').get(id));
+}
+
+async function getCachedSharedVideo(id) {
+  const database = await openDatabase();
+  return requestPromise(database.transaction('sharedVideos').objectStore('sharedVideos').get(id));
+}
+
+async function cacheSharedVideo(video, blob) {
+  const database = await openDatabase();
+  const transaction = database.transaction('sharedVideos', 'readwrite');
+  const completed = transactionPromise(transaction);
+  transaction.objectStore('sharedVideos').put({
+    id: video.id,
+    fileName: video.fileName,
+    sizeBytes: video.sizeBytes,
+    blob,
+    cachedAt: Date.now()
+  });
+  await completed;
 }
 
 async function removeLocalCollection(collection) {
@@ -835,6 +859,8 @@ function updateEpisodeOptions(episodes = sortedEpisodes(currentCollection)) {
 
 function clearPlayerUrls() {
   playbackGeneration += 1;
+  sharedDownloadController?.abort();
+  sharedDownloadController = undefined;
   videoPlayer.pause();
   videoPlayer.removeAttribute('src');
   videoPlayer.replaceChildren();
@@ -844,6 +870,8 @@ function clearPlayerUrls() {
   seekInput.value = '0';
   currentTimeLabel.textContent = '0:00';
   durationLabel.textContent = '0:00';
+  sharedDownloadProgress.hidden = true;
+  sharedDownloadProgress.removeAttribute('value');
 }
 
 function formatPlaybackTime(seconds) {
@@ -880,6 +908,98 @@ function updateMuteButton() {
   muteButton.firstElementChild.textContent = isMuted ? '◖×' : '◖))';
 }
 
+async function downloadSharedVideo(video, generation) {
+  const cachedVideo = await getCachedSharedVideo(video.id);
+  if (generation !== playbackGeneration) return null;
+  if (cachedVideo?.blob instanceof Blob) return cachedVideo.blob;
+
+  if (navigator.storage?.estimate && Number(video.sizeBytes) > 0) {
+    const estimate = await navigator.storage.estimate();
+    const availableBytes = Number(estimate.quota) - Number(estimate.usage);
+    if (Number.isFinite(availableBytes) && availableBytes < Number(video.sizeBytes)) {
+      throw new Error(
+        `Espace local insuffisant : ${formatBytes(Math.max(0, availableBytes))} libres, ` +
+        `${formatBytes(Number(video.sizeBytes))} nécessaires.`
+      );
+    }
+  }
+  if (generation !== playbackGeneration) return null;
+
+  const controller = new AbortController();
+  sharedDownloadController = controller;
+  sharedDownloadProgress.hidden = false;
+  sharedDownloadProgress.value = 0;
+  setMessage(playerMessage, `Téléchargement de « ${video.fileName} » pour lecture locale…`);
+  try {
+    const response = await fetch(window.config.getApiUrl(
+      `/vital/api/videos/shared/${encodeURIComponent(video.id)}`
+    ), { signal: controller.signal });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail || `Téléchargement impossible (${response.status}).`);
+    }
+
+    const totalBytes = Number(video.sizeBytes) ||
+      Number(response.headers.get('Content-Length')) || 0;
+    const chunks = [];
+    let receivedBytes = 0;
+    if (response.body) {
+      const reader = response.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (generation !== playbackGeneration) {
+          await reader.cancel();
+          return null;
+        }
+        chunks.push(value);
+        receivedBytes += value.byteLength;
+        if (totalBytes > 0) {
+          sharedDownloadProgress.value = Math.min(100, receivedBytes / totalBytes * 100);
+          setMessage(
+            playerMessage,
+            `Téléchargement pour lecture locale : ${formatBytes(receivedBytes)} sur ${formatBytes(totalBytes)}.`
+          );
+        } else {
+          setMessage(playerMessage, `Téléchargement pour lecture locale : ${formatBytes(receivedBytes)} reçus.`);
+        }
+      }
+    } else {
+      const blob = await response.blob();
+      chunks.push(blob);
+      receivedBytes = blob.size;
+    }
+
+    if (generation !== playbackGeneration) return null;
+    const blob = new Blob(chunks, { type: video.mimeType || 'application/octet-stream' });
+    if (totalBytes > 0 && receivedBytes !== totalBytes) {
+      throw new Error(
+        `Téléchargement incomplet : ${formatBytes(receivedBytes)} reçus sur ${formatBytes(totalBytes)}.`
+      );
+    }
+    try {
+      await cacheSharedVideo(video, blob);
+    } catch (error) {
+      if (generation !== playbackGeneration) return null;
+      setMessage(
+        playerMessage,
+        `La vidéo a été téléchargée, mais sa mise en cache locale a échoué : ${error.message}. Lecture temporaire.`,
+        true
+      );
+      return blob;
+    }
+    if (generation !== playbackGeneration) return null;
+    setMessage(playerMessage, 'Téléchargement terminé. Lecture locale prête.');
+    return blob;
+  } finally {
+    if (generation === playbackGeneration) {
+      sharedDownloadProgress.hidden = true;
+      sharedDownloadProgress.removeAttribute('value');
+    }
+    if (sharedDownloadController === controller) sharedDownloadController = undefined;
+  }
+}
+
 async function showEpisode(index, shouldPlay = false) {
   const episodes = sortedEpisodes(currentCollection);
   if (index < 0 || index >= episodes.length) return;
@@ -899,9 +1019,16 @@ async function showEpisode(index, shouldPlay = false) {
   setMessage(playerMessage, '');
 
   if (currentSource === 'shared') {
-    currentVideoUrl = window.config.getApiUrl(
-      `/vital/api/videos/shared/${encodeURIComponent(episode.id)}`
-    );
+    try {
+      const blob = await downloadSharedVideo(episode, generation);
+      if (!blob || generation !== playbackGeneration) return;
+      currentVideoUrl = URL.createObjectURL(blob);
+    } catch (error) {
+      if (generation === playbackGeneration && !isPlaybackInterrupted(error)) {
+        setMessage(playerMessage, `Téléchargement impossible : ${error.message}`, true);
+      }
+      return;
+    }
   } else {
     const storedVideo = await getLocalVideo(episode.id);
     if (generation !== playbackGeneration) return;

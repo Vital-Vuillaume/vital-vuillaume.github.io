@@ -362,7 +362,7 @@
 
 .player-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
   gap: 12px;
   max-height: calc(100dvh - 26px);
   padding: clamp(12px, 2vw, 20px);
@@ -479,6 +479,16 @@
   gap: 12px;
 }
 
+.shared-download-progress {
+  width: 100%;
+  height: 8px;
+  accent-color: #38bdf8;
+}
+
+.shared-download-progress[hidden] {
+  display: none;
+}
+
 .player-option {
   width: min(190px, 100%);
 }
@@ -517,6 +527,7 @@ body.player-open {
 
 .player-shell:fullscreen .player-heading,
 .player-shell:fullscreen .player-toolbar,
+.player-shell:fullscreen .shared-download-progress,
 .player-shell:fullscreen #player-message {
   display: none;
 }
