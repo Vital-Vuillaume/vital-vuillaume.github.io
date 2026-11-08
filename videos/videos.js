@@ -70,7 +70,12 @@ let currentEpisodeIndex = 0;
 let currentVideoUrl = '';
 let databasePromise;
 let fullscreenControlsTimer;
+let playbackGeneration = 0;
 const panelAuth = window.VitaLoadPanelAuth;
+
+function isPlaybackInterrupted(error) {
+  return error?.name === 'AbortError';
+}
 
 function clearFullscreenControlsTimer() {
   window.clearTimeout(fullscreenControlsTimer);
@@ -829,6 +834,7 @@ function updateEpisodeOptions(episodes = sortedEpisodes(currentCollection)) {
 }
 
 function clearPlayerUrls() {
+  playbackGeneration += 1;
   videoPlayer.pause();
   videoPlayer.removeAttribute('src');
   videoPlayer.replaceChildren();
@@ -877,6 +883,8 @@ function updateMuteButton() {
 async function showEpisode(index, shouldPlay = false) {
   const episodes = sortedEpisodes(currentCollection);
   if (index < 0 || index >= episodes.length) return;
+  clearPlayerUrls();
+  const generation = playbackGeneration;
   currentEpisodeIndex = index;
   const episode = episodes[index];
   playerTitle.textContent = currentCollection.title;
@@ -889,7 +897,6 @@ async function showEpisode(index, shouldPlay = false) {
     episodeSelect.value = episode.id;
   }
   setMessage(playerMessage, '');
-  clearPlayerUrls();
 
   if (currentSource === 'shared') {
     currentVideoUrl = window.config.getApiUrl(
@@ -897,12 +904,14 @@ async function showEpisode(index, shouldPlay = false) {
     );
   } else {
     const storedVideo = await getLocalVideo(episode.id);
+    if (generation !== playbackGeneration) return;
     if (!storedVideo) {
       setMessage(playerMessage, 'Cette vidéo locale est introuvable dans IndexedDB.', true);
       return;
     }
     currentVideoUrl = URL.createObjectURL(storedVideo.blob);
   }
+  if (generation !== playbackGeneration) return;
   videoPlayer.src = currentVideoUrl;
   videoPlayer.playbackRate = Number(playbackSpeed.value);
   videoPlayer.load();
@@ -912,7 +921,9 @@ async function showEpisode(index, shouldPlay = false) {
     try {
       await videoPlayer.play();
     } catch (error) {
-      setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+      if (generation === playbackGeneration && !isPlaybackInterrupted(error)) {
+        setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+      }
     }
   }
 }
@@ -1024,7 +1035,9 @@ playPauseButton.addEventListener('click', async () => {
     try {
       await videoPlayer.play();
     } catch (error) {
-      setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+      if (!isPlaybackInterrupted(error)) {
+        setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+      }
     }
   } else {
     videoPlayer.pause();
@@ -1092,7 +1105,9 @@ videoPlayer.addEventListener('click', async () => {
     try {
       await videoPlayer.play();
     } catch (error) {
-      setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+      if (!isPlaybackInterrupted(error)) {
+        setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+      }
     }
   } else {
     videoPlayer.pause();
