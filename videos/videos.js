@@ -931,48 +931,50 @@ async function downloadSharedVideo(video, generation) {
   sharedDownloadProgress.value = 0;
   setMessage(playerMessage, `Téléchargement de « ${video.fileName} » pour lecture locale…`);
   try {
-    const response = await fetch(window.config.getApiUrl(
-      `/vital/api/videos/shared/${encodeURIComponent(video.id)}`
-    ), { signal: controller.signal });
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(detail || `Téléchargement impossible (${response.status}).`);
+    const totalBytes = Number(video.sizeBytes);
+    if (!Number.isSafeInteger(totalBytes) || totalBytes <= 0) {
+      throw new Error('La taille de cette vidéo est inconnue ; téléchargement par fragments impossible.');
     }
 
-    const totalBytes = Number(video.sizeBytes) ||
-      Number(response.headers.get('Content-Length')) || 0;
+    const chunkSize = 4 * 1024 ** 2;
     const chunks = [];
     let receivedBytes = 0;
-    if (response.body) {
-      const reader = response.body.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (generation !== playbackGeneration) {
-          await reader.cancel();
-          return null;
-        }
-        chunks.push(value);
-        receivedBytes += value.byteLength;
-        if (totalBytes > 0) {
-          sharedDownloadProgress.value = Math.min(100, receivedBytes / totalBytes * 100);
-          setMessage(
-            playerMessage,
-            `Téléchargement pour lecture locale : ${formatBytes(receivedBytes)} sur ${formatBytes(totalBytes)}.`
-          );
-        } else {
-          setMessage(playerMessage, `Téléchargement pour lecture locale : ${formatBytes(receivedBytes)} reçus.`);
-        }
+    const chunkCount = Math.ceil(totalBytes / chunkSize);
+    for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
+      if (generation !== playbackGeneration) return null;
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, totalBytes) - 1;
+      const url = window.config.getApiUrl(
+        `/vital/api/videos/shared/${encodeURIComponent(video.id)}?start=${start}&end=${end}`
+      );
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(
+          detail || `Fragment ${chunkIndex + 1}/${chunkCount} impossible à télécharger (${response.status}).`
+        );
       }
-    } else {
-      const blob = await response.blob();
-      chunks.push(blob);
-      receivedBytes = blob.size;
+      const chunk = await response.blob();
+      const expectedBytes = end - start + 1;
+      if (chunk.size !== expectedBytes) {
+        throw new Error(
+          `Fragment ${chunkIndex + 1}/${chunkCount} incomplet : ` +
+          `${formatBytes(chunk.size)} reçus sur ${formatBytes(expectedBytes)}.`
+        );
+      }
+      chunks.push(chunk);
+      receivedBytes += chunk.size;
+      sharedDownloadProgress.value = Math.min(100, receivedBytes / totalBytes * 100);
+      setMessage(
+        playerMessage,
+        `Téléchargement pour lecture locale : ${formatBytes(receivedBytes)} sur ${formatBytes(totalBytes)} ` +
+        `(fragment ${chunkIndex + 1}/${chunkCount}).`
+      );
     }
 
     if (generation !== playbackGeneration) return null;
     const blob = new Blob(chunks, { type: video.mimeType || 'application/octet-stream' });
-    if (totalBytes > 0 && receivedBytes !== totalBytes) {
+    if (receivedBytes !== totalBytes) {
       throw new Error(
         `Téléchargement incomplet : ${formatBytes(receivedBytes)} reçus sur ${formatBytes(totalBytes)}.`
       );
