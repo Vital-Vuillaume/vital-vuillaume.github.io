@@ -892,7 +892,9 @@ async function showEpisode(index, shouldPlay = false) {
   clearPlayerUrls();
 
   if (currentSource === 'shared') {
-    currentVideoUrl = `/vital/api/videos/shared/${encodeURIComponent(episode.id)}`;
+    currentVideoUrl = window.config.getApiUrl(
+      `/vital/api/videos/shared/${encodeURIComponent(episode.id)}`
+    );
   } else {
     const storedVideo = await getLocalVideo(episode.id);
     if (!storedVideo) {
