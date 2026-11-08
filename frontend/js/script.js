@@ -93,7 +93,7 @@ window.VitaLoadPanelAuth = {
 
         const headers = new Headers(options.headers || {});
         headers.set('X-Panel-Session', sessionId);
-        if (options.body && !(options.body instanceof FormData)) {
+        if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
             headers.set('Content-Type', 'application/json');
         }
 

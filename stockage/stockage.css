@@ -375,8 +375,36 @@
   gap: 10px;
 }
 
+.storage-download-all-button {
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
+  flex: 0 0 38px;
+  font-size: 1.15rem;
+}
+
 .selected-files {
   flex-basis: 100%;
+}
+
+.storage-upload-progress,
+.storage-download-progress {
+  width: min(100%, 360px);
+  height: 10px;
+  flex-basis: 100%;
+  accent-color: #38bdf8;
+}
+
+.storage-download-status {
+  flex-basis: 100%;
+  color: #b6c7df;
+  font-size: 0.85rem;
+}
+
+.storage-upload-progress[hidden],
+.storage-download-progress[hidden],
+.storage-download-status[hidden] {
+  display: none;
 }
 
 .storage-breadcrumbs {

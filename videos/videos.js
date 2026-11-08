@@ -34,17 +34,13 @@ const dropHelp = document.getElementById('drop-help');
 const dropInstruction = document.getElementById('drop-instruction');
 const uploadEyebrow = document.getElementById('upload-eyebrow');
 const uploadStorageLabel = document.getElementById('upload-storage-label');
-const folderInput = document.getElementById('video-folder');
-const chooseFolderButton = document.getElementById('choose-folder');
-const fileExplorer = document.getElementById('file-explorer');
-const explorerBreadcrumbs = document.getElementById('explorer-breadcrumbs');
-const explorerCurrentFolder = document.getElementById('explorer-current-folder');
-const explorerList = document.getElementById('explorer-list');
-const explorerEmpty = document.getElementById('explorer-empty');
-const explorerHint = document.getElementById('explorer-hint');
+const dropZone = document.getElementById('drop-zone');
+const videoFilesInput = document.getElementById('video-files');
+const chooseFilesButton = document.getElementById('choose-files');
 const selectedFilesLabel = document.getElementById('selected-files');
 const uploadSubmit = document.getElementById('upload-submit');
 const uploadProgress = document.getElementById('upload-progress');
+const uploadProgressLabel = document.getElementById('upload-progress-label');
 const uploadMessage = document.getElementById('upload-message');
 const playerDialog = document.getElementById('video-player-dialog');
 const videoPlayer = document.getElementById('video-player');
@@ -52,12 +48,19 @@ const playerTitle = document.getElementById('player-title');
 const playerSubtitle = document.getElementById('player-subtitle');
 const playerKind = document.getElementById('player-kind');
 const playerMessage = document.getElementById('player-message');
+const playerShell = document.querySelector('.player-shell');
+const playPauseButton = document.getElementById('player-play-pause');
+const seekInput = document.getElementById('player-seek');
+const currentTimeLabel = document.getElementById('player-current-time');
+const durationLabel = document.getElementById('player-duration');
+const muteButton = document.getElementById('player-mute');
+const volumeInput = document.getElementById('player-volume');
 const seasonOption = document.getElementById('season-option');
 const episodeOption = document.getElementById('episode-option');
+const autoplayNextOption = document.getElementById('autoplay-next-option');
 const seasonSelect = document.getElementById('season-select');
 const episodeSelect = document.getElementById('episode-select');
 const playbackSpeed = document.getElementById('playback-speed');
-const subtitleInput = document.getElementById('subtitle-file');
 const autoplayNext = document.getElementById('autoplay-next');
 let selectedVideos = [];
 let isSuperadmin = false;
@@ -65,14 +68,24 @@ let currentCollection = null;
 let currentSource = 'local';
 let currentEpisodeIndex = 0;
 let currentVideoUrl = '';
-let currentSubtitleUrl = '';
 let databasePromise;
-let selectedFromFolder = false;
-let explorerEntries = [];
-let explorerRootName = '';
-let explorerPath = '';
-let selectedPaths = new Set();
+let fullscreenControlsTimer;
 const panelAuth = window.VitaLoadPanelAuth;
+
+function clearFullscreenControlsTimer() {
+  window.clearTimeout(fullscreenControlsTimer);
+  fullscreenControlsTimer = undefined;
+}
+
+function showFullscreenControls() {
+  clearFullscreenControlsTimer();
+  playerShell.classList.remove('fullscreen-controls-hidden');
+  if (document.fullscreenElement === playerShell) {
+    fullscreenControlsTimer = window.setTimeout(() => {
+      playerShell.classList.add('fullscreen-controls-hidden');
+    }, 2500);
+  }
+}
 
 function requestPromise(request) {
   return new Promise((resolve, reject) => {
@@ -337,9 +350,6 @@ function createSeasonEntries(files) {
 }
 
 function getSelectedEntries() {
-  if (uploadType.value === 'movie' && selectedFromFolder) {
-    throw new Error('En mode Film, sélectionne des vidéos individuelles. Choisis Série pour importer un dossier.');
-  }
   const files = selectedVideos.filter(({ file }) => isVideoFile(file));
   if (files.length === 0) throw new Error('Sélectionne au moins une vidéo compatible.');
   if (uploadType.value === 'series') return createSeasonEntries(files);
@@ -358,27 +368,20 @@ function updateSelectedFiles() {
   const total = valid.reduce((sum, entry) => sum + entry.file.size, 0);
   selectedFilesLabel.textContent =
     `${valid.length} vidéo${valid.length === 1 ? '' : 's'} · ${formatBytes(total)} · ` +
-    valid.slice(0, 3).map((entry) => entry.path.split('/').pop()).join(', ') +
+    valid.slice(0, 3).map((entry) => entry.file.name).join(', ') +
     (valid.length > 3 ? ` et ${valid.length - 3} autre(s)` : '');
 }
 
 function updateUploadCopy() {
   const isSeries = uploadType.value === 'series';
-  if (!isSeries && selectedFromFolder) {
-    selectedVideos = [];
-    selectedPaths.clear();
-    selectedFromFolder = false;
-    updateSelectedFiles();
-    setMessage(uploadMessage, '');
-  }
   seriesTitleField.hidden = !isSeries;
   uploadTitle.required = isSeries;
   dropInstruction.textContent = isSeries
-    ? 'Parcours les dossiers pour choisir une série complète'
-    : 'Parcours les dossiers et sélectionne les films à importer';
+    ? 'Choisis un ou plusieurs épisodes vidéo'
+    : 'Choisis un ou plusieurs films vidéo';
   dropHelp.textContent = isSeries
-    ? 'Ouvre le dossier de la série, puis choisis-le : les sous-dossiers de saisons seront reconnus.'
-    : 'Tu peux naviguer dans les sous-dossiers, puis sélectionner un ou plusieurs fichiers vidéo.';
+    ? 'Dépose ou choisis plusieurs épisodes. Les noms comme S01E01 ou 1x01 aident à reconnaître leur saison et leur numéro.'
+    : 'Dépose les vidéos ici, ou clique pour choisir un ou plusieurs fichiers.';
 }
 
 function updateUploadDestinationCopy() {
@@ -395,148 +398,20 @@ function updateUploadDestinationCopy() {
 function useFiles(fileList) {
   const files = Array.from(fileList);
   if (files.length === 0) return;
-  const firstRelativePath = files[0].webkitRelativePath || files[0].name;
-  explorerRootName = firstRelativePath.split('/')[0] || 'Dossier sélectionné';
-  explorerEntries = files.map((file) => {
-    const relativeParts = (file.webkitRelativePath || file.name).split('/').filter(Boolean);
-    return {
-      file,
-      path: relativeParts.length > 1 ? relativeParts.slice(1).join('/') : file.name
-    };
-  });
-  explorerPath = '';
-  selectedPaths.clear();
-  selectedVideos = [];
-  selectedFromFolder = false;
-  fileExplorer.hidden = false;
-  setMessage(uploadMessage, '');
-  renderFileExplorer();
+  const validFiles = files.filter(isVideoFile);
+  selectedVideos = validFiles.map((file) => ({ file, path: file.name }));
+  if (validFiles.length === 0) {
+    setMessage(uploadMessage, 'Aucun fichier vidéo compatible n’a été sélectionné.', true);
+  } else if (validFiles.length < files.length) {
+    setMessage(
+      uploadMessage,
+      `${files.length - validFiles.length} fichier(s) ignoré(s) : seuls les formats vidéo compatibles sont acceptés.`,
+      true
+    );
+  } else {
+    setMessage(uploadMessage, '');
+  }
   updateSelectedFiles();
-}
-
-function renderFileExplorer() {
-  explorerBreadcrumbs.replaceChildren();
-  const rootButton = makeElement('button', 'explorer-crumb', explorerRootName);
-  rootButton.type = 'button';
-  rootButton.addEventListener('click', () => {
-    explorerPath = '';
-    renderFileExplorer();
-  });
-  explorerBreadcrumbs.append(rootButton);
-
-  const pathParts = explorerPath.split('/').filter(Boolean);
-  pathParts.forEach((part, index) => {
-    explorerBreadcrumbs.append(makeElement('span', 'explorer-breadcrumb-separator', '/'));
-    const crumb = makeElement('button', 'explorer-crumb', part);
-    crumb.type = 'button';
-    crumb.addEventListener('click', () => {
-      explorerPath = pathParts.slice(0, index + 1).join('/');
-      renderFileExplorer();
-    });
-    explorerBreadcrumbs.append(crumb);
-  });
-
-  const currentFolderName = pathParts[pathParts.length - 1];
-  const canUseCurrentFolder = uploadType.value === 'series' && currentFolderName &&
-    canSelectSeriesFolder(explorerPath, currentFolderName);
-  explorerCurrentFolder.hidden = !canUseCurrentFolder;
-  explorerCurrentFolder.textContent = canUseCurrentFolder
-    ? `Choisir « ${currentFolderName} » comme série`
-    : 'Choisir ce dossier comme série';
-
-  explorerList.replaceChildren();
-  const currentParts = pathParts;
-  const prefix = currentParts.length ? `${currentParts.join('/')}/` : '';
-  const childFolders = new Set();
-  const currentFiles = [];
-  for (const entry of explorerEntries) {
-    if (!entry.path.startsWith(prefix)) continue;
-    const remainder = entry.path.slice(prefix.length);
-    const separator = remainder.indexOf('/');
-    if (separator >= 0) childFolders.add(remainder.slice(0, separator));
-    else currentFiles.push(entry);
-  }
-
-  for (const folderName of [...childFolders].sort((left, right) => naturalCompare(left, right))) {
-    const folderPath = prefix ? `${prefix}${folderName}` : folderName;
-    const row = makeElement('div', 'explorer-entry explorer-folder');
-    const openButton = makeElement('button', 'explorer-open-folder', `📁 ${folderName}`);
-    openButton.type = 'button';
-    openButton.addEventListener('click', () => {
-      explorerPath = folderPath;
-      renderFileExplorer();
-    });
-    row.append(openButton);
-    if (uploadType.value === 'series' && canSelectSeriesFolder(folderPath, folderName)) {
-      const chooseSeriesButton = makeElement('button', 'explorer-use-folder', 'Choisir cette série');
-      chooseSeriesButton.type = 'button';
-      chooseSeriesButton.addEventListener('click', () => selectExplorerSeries(folderPath, folderName));
-      row.append(chooseSeriesButton);
-    }
-    explorerList.append(row);
-  }
-
-  currentFiles.sort((left, right) => naturalCompare(left.file.name, right.file.name));
-  for (const entry of currentFiles) {
-    const row = makeElement('label', 'explorer-entry explorer-file');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = selectedPaths.has(entry.path);
-    checkbox.disabled = !isVideoFile(entry.file);
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) selectedPaths.add(entry.path);
-      else selectedPaths.delete(entry.path);
-      selectedFromFolder = false;
-      selectedVideos = explorerEntries.filter((candidate) => selectedPaths.has(candidate.path));
-      updateSelectedFiles();
-    });
-    const fileName = makeElement('span', 'explorer-file-name', `🎞 ${entry.file.name}`);
-    const size = makeElement('span', 'explorer-file-size', formatBytes(entry.file.size));
-    row.append(checkbox, fileName, size);
-    explorerList.append(row);
-  }
-
-  explorerEmpty.hidden = childFolders.size > 0 || currentFiles.length > 0;
-  explorerHint.textContent = uploadType.value === 'series'
-    ? 'Ouvre le dossier de la série (par exemple « tulsa-king »), puis clique sur « Choisir cette série ». Les dossiers de saisons ne sont pas proposés comme séries.'
-    : 'Coche les fichiers vidéo à importer. Les dossiers servent uniquement à naviguer : ils ne seront pas importés comme films.';
-}
-
-function canSelectSeriesFolder(folderPath, folderName) {
-  if (/^(?:film|films|movie|movies|serie|series|tv|video|videos)$/i.test(folderName)) return false;
-  if (/^(?:saison|season|s)\s*\d+$/i.test(folderName)) return false;
-  const prefix = folderPath ? `${folderPath}/` : '';
-  let hasDirectVideo = false;
-  let hasSeasonFolder = false;
-  for (const entry of explorerEntries) {
-    if (!entry.path.startsWith(prefix)) continue;
-    const remainder = entry.path.slice(prefix.length);
-    const separator = remainder.indexOf('/');
-    if (separator < 0 && isVideoFile(entry.file)) hasDirectVideo = true;
-    if (separator >= 0 && /^(?:saison|season|s)\s*\d+$/i.test(remainder.slice(0, separator))) {
-      hasSeasonFolder = true;
-    }
-    if (hasDirectVideo || hasSeasonFolder) return true;
-  }
-  return false;
-}
-
-function selectExplorerSeries(folderPath, title) {
-  const prefix = `${folderPath}/`;
-  const videos = explorerEntries.filter((entry) =>
-    entry.path.startsWith(prefix) && isVideoFile(entry.file)
-  );
-  if (videos.length === 0) {
-    setMessage(uploadMessage, 'Ce dossier ne contient aucune vidéo compatible.', true);
-    return;
-  }
-  selectedVideos = videos;
-  selectedPaths = new Set(videos.map((entry) => entry.path));
-  selectedFromFolder = true;
-  uploadTitle.value = title;
-  updateSelectedFiles();
-  setMessage(uploadMessage, `Dossier « ${title} » sélectionné comme série.`);
-  renderFileExplorer();
 }
 
 function makeElement(tag, className, text) {
@@ -649,14 +524,136 @@ async function detectSuperadmin() {
 }
 
 function postSharedVideos(entries, type, title) {
-  const formData = new FormData();
-  formData.append('type', type);
-  formData.append('title', title);
-  formData.append('entries', JSON.stringify(entries.map(({ details }) => details)));
-  for (const entry of entries) formData.append('files', entry.file, entry.file.name);
-  return panelAuth.request('/vital/api/videos/upload', {
-    method: 'POST',
-    body: formData
+  return new Promise((resolve, reject) => {
+    const sessionId = panelAuth.getSessionId();
+    if (!sessionId) {
+      panelAuth.clearSession();
+      window.location.replace('/connexion/');
+      reject(new Error('Connexion requise.'));
+      return;
+    }
+
+    const totalBytes = entries.reduce((total, entry) => total + entry.file.size, 0);
+    const collectionId = type === 'series' ? crypto.randomUUID() : null;
+    const chunkSize = 4 * 1024 ** 2;
+    let uploadedBytes = 0;
+
+    (async () => {
+      for (let index = 0; index < entries.length; index += 1) {
+        const entry = entries[index];
+        const uploadId = crypto.randomUUID();
+        const chunkCount = Math.max(1, Math.ceil(entry.file.size / chunkSize));
+        try {
+          for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
+            const start = chunkIndex * chunkSize;
+            const end = Math.min(start + chunkSize, entry.file.size);
+            await new Promise((resolveUpload, rejectUpload) => {
+              const query = new URLSearchParams({
+                uploadId,
+                name: entry.file.name,
+                totalSize: String(entry.file.size),
+                chunkIndex: String(chunkIndex),
+                chunkCount: String(chunkCount)
+              });
+              const xhr = new XMLHttpRequest();
+              xhr.open(
+                'POST',
+                window.config.getApiUrl(`/vital/api/videos/upload-chunk?${query}`)
+              );
+              xhr.setRequestHeader('X-Panel-Session', sessionId);
+              xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+              xhr.responseType = 'text';
+              xhr.upload.addEventListener('progress', (event) => {
+                const currentBytes = event.lengthComputable ? event.loaded : 0;
+                const overallBytes = uploadedBytes + start + currentBytes;
+                const percent = totalBytes > 0
+                  ? Math.min(100, overallBytes / totalBytes * 100)
+                  : (index + (event.lengthComputable ? 1 : 0)) / entries.length * 100;
+                uploadProgress.value = percent;
+                uploadProgressLabel.textContent =
+                  `Importation : ${index + 1}/${entries.length} vidéo(s) · ${Math.round(percent)} % ` +
+                  `(${formatBytes(overallBytes)} sur ${formatBytes(totalBytes)}).`;
+              });
+              xhr.addEventListener('load', () => {
+                let response;
+                try {
+                  response = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+                } catch {
+                  response = null;
+                }
+                if (xhr.status === 401) {
+                  panelAuth.clearSession();
+                  window.location.replace('/connexion/');
+                  rejectUpload(new Error('Votre session a expiré.'));
+                  return;
+                }
+                if (xhr.status < 200 || xhr.status >= 300) {
+                  rejectUpload(new Error(
+                    response?.error || xhr.responseText || `Le dépôt a échoué (${xhr.status}).`
+                  ));
+                  return;
+                }
+                resolveUpload();
+              });
+              xhr.addEventListener('error', () =>
+                rejectUpload(new Error(`Impossible d’envoyer « ${entry.file.name} » au serveur.`))
+              );
+              xhr.addEventListener('abort', () =>
+                rejectUpload(new Error(`Le dépôt de « ${entry.file.name} » a été interrompu.`))
+              );
+              xhr.send(entry.file.slice(start, end));
+            });
+
+            uploadProgress.value = totalBytes > 0
+              ? Math.min(100, (uploadedBytes + end) / totalBytes * 100)
+              : (index + 1) / entries.length * 100;
+            uploadProgressLabel.textContent =
+              `Importation : ${index + 1}/${entries.length} vidéo(s) · ` +
+              `${Math.round(uploadProgress.value)} % ` +
+              `(${formatBytes(uploadedBytes + end)} sur ${formatBytes(totalBytes)}).`;
+          }
+
+          await panelAuth.request('/vital/api/videos/upload-complete', {
+            method: 'POST',
+            body: JSON.stringify({
+              uploadId,
+              name: entry.file.name,
+              type,
+              title,
+              entry: entry.details,
+              collectionId: collectionId || crypto.randomUUID()
+            })
+          });
+          uploadedBytes += entry.file.size;
+        } catch (error) {
+          try {
+            await panelAuth.request('/vital/api/videos/upload-cancel', {
+              method: 'POST',
+              body: JSON.stringify({ uploadId })
+            });
+          } catch (cleanupError) {
+            const originalError = error instanceof Error ? error : new Error(String(error));
+            const cleanupMessage = cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError);
+            originalError.message =
+              `${originalError.message} Le nettoyage du dépôt temporaire a aussi échoué : ${cleanupMessage}`;
+            error = originalError;
+          }
+          if (index > 0) {
+            throw new Error(
+              `Import interrompu après ${index} vidéo${index === 1 ? '' : 's'} : ${error.message}`
+            );
+          }
+          throw error;
+        }
+      }
+
+      uploadProgress.value = 100;
+      uploadProgressLabel.textContent =
+        'Envoi terminé. Actualisation de la bibliothèque partagée…';
+      resolve(await loadSharedCollections());
+    })().catch(reject);
   });
 }
 
@@ -723,13 +720,9 @@ async function saveLocally(entries, type, title) {
 function clearUploadSelection() {
   uploadForm.reset();
   selectedVideos = [];
-  selectedPaths.clear();
-  selectedFromFolder = false;
-  folderInput.value = '';
   updateSelectedFiles();
   updateUploadCopy();
   updateUploadDestinationCopy();
-  if (!fileExplorer.hidden) renderFileExplorer();
 }
 
 async function handleUpload(event) {
@@ -741,11 +734,16 @@ async function handleUpload(event) {
     const title = uploadType.value === 'series'
       ? uploadTitle.value.trim()
       : displayName(entries[0].file.name);
+    const shareWithEveryone = isSuperadmin && uploadDestination.value === 'shared';
+    if (shareWithEveryone && entries.length > 1000) {
+      throw new Error('Un import serveur ne peut pas contenir plus de 1 000 vidéos.');
+    }
     uploadSubmit.disabled = true;
     uploadProgress.hidden = false;
     uploadProgress.removeAttribute('value');
-    const shareWithEveryone = isSuperadmin && uploadDestination.value === 'shared';
+    uploadProgressLabel.hidden = false;
     if (shareWithEveryone) {
+      uploadProgressLabel.textContent = 'Préparation de l’envoi des vidéos…';
       const data = await postSharedVideos(entries, uploadType.value, title);
       sharedLibrary.replaceChildren();
       for (const collection of data.collections) renderCollection(sharedLibrary, collection, 'shared');
@@ -755,6 +753,7 @@ async function handleUpload(event) {
       updateSharedStorage(data);
       setMessage(uploadMessage, 'Dépôt terminé. Les vidéos sont maintenant visibles par tous.');
     } else {
+      uploadProgressLabel.textContent = 'Enregistrement des vidéos dans la bibliothèque de ce navigateur…';
       await saveLocally(entries, uploadType.value, title);
       await renderLocalLibrary();
       setMessage(
@@ -774,6 +773,8 @@ async function handleUpload(event) {
     uploadSubmit.disabled = false;
     uploadProgress.value = 0;
     uploadProgress.hidden = true;
+    uploadProgressLabel.hidden = true;
+    uploadProgressLabel.textContent = '';
   }
 }
 
@@ -790,6 +791,7 @@ function fillEpisodeOptions() {
   const isSeries = currentCollection.type === 'series';
   seasonOption.hidden = !isSeries;
   episodeOption.hidden = !isSeries;
+  autoplayNextOption.hidden = !isSeries;
   if (!isSeries) return;
 
   const seasons = [...new Map(episodes.map((episode) => [
@@ -832,9 +834,44 @@ function clearPlayerUrls() {
   videoPlayer.replaceChildren();
   videoPlayer.load();
   if (currentVideoUrl.startsWith('blob:')) URL.revokeObjectURL(currentVideoUrl);
-  if (currentSubtitleUrl.startsWith('blob:')) URL.revokeObjectURL(currentSubtitleUrl);
   currentVideoUrl = '';
-  currentSubtitleUrl = '';
+  seekInput.value = '0';
+  currentTimeLabel.textContent = '0:00';
+  durationLabel.textContent = '0:00';
+}
+
+function formatPlaybackTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const totalSeconds = Math.floor(seconds);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = String(totalSeconds % 60).padStart(2, '0');
+  if (minutes < 60) return `${minutes}:${remainingSeconds}`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}:${String(minutes % 60).padStart(2, '0')}:${remainingSeconds}`;
+}
+
+function updatePlayPauseButton() {
+  const isPlaying = !videoPlayer.paused && !videoPlayer.ended;
+  playPauseButton.setAttribute('aria-label', isPlaying ? 'Mettre en pause' : 'Lire');
+  playPauseButton.title = isPlaying ? 'Mettre en pause' : 'Lire';
+  playPauseButton.firstElementChild.textContent = isPlaying ? 'Ⅱ' : '▶';
+}
+
+function updatePlayerProgress() {
+  currentTimeLabel.textContent = formatPlaybackTime(videoPlayer.currentTime);
+  durationLabel.textContent = formatPlaybackTime(videoPlayer.duration);
+  if (Number.isFinite(videoPlayer.duration) && videoPlayer.duration > 0) {
+    seekInput.value = String(Math.round(videoPlayer.currentTime / videoPlayer.duration * 1000));
+  } else {
+    seekInput.value = '0';
+  }
+}
+
+function updateMuteButton() {
+  const isMuted = videoPlayer.muted || videoPlayer.volume === 0;
+  muteButton.setAttribute('aria-label', isMuted ? 'Activer le son' : 'Couper le son');
+  muteButton.title = isMuted ? 'Activer le son' : 'Couper le son';
+  muteButton.firstElementChild.textContent = isMuted ? '◖×' : '◖))';
 }
 
 async function showEpisode(index, shouldPlay = false) {
@@ -867,6 +904,8 @@ async function showEpisode(index, shouldPlay = false) {
   videoPlayer.src = currentVideoUrl;
   videoPlayer.playbackRate = Number(playbackSpeed.value);
   videoPlayer.load();
+  updatePlayerProgress();
+  updatePlayPauseButton();
   if (shouldPlay) {
     try {
       await videoPlayer.play();
@@ -882,7 +921,13 @@ async function openPlayer(collection, source) {
   currentEpisodeIndex = 0;
   playerKind.textContent = collection.type === 'series' ? 'Série' : 'Film';
   fillEpisodeOptions();
-  playerDialog.showModal();
+  document.body.classList.add('player-open');
+  try {
+    playerDialog.showModal();
+  } catch (error) {
+    document.body.classList.remove('player-open');
+    throw error;
+  }
   await showEpisode(0, true);
 }
 
@@ -896,7 +941,7 @@ async function handleCollectionAction(event) {
     if (action === 'play') {
       const collections = source === 'local'
         ? await getLocalCollections()
-        : await loadSharedCollections();
+        : (await loadSharedCollections()).collections;
       const collection = collections.find((item) => item.id === collectionId);
       if (!collection) throw new Error('Film ou série introuvable.');
       await openPlayer(collection, source);
@@ -925,16 +970,25 @@ async function handleCollectionAction(event) {
   }
 }
 
-chooseFolderButton.addEventListener('click', () => folderInput.click());
-folderInput.addEventListener('change', () => useFiles(folderInput.files));
-explorerCurrentFolder.addEventListener('click', () => {
-  const folderName = explorerPath.split('/').filter(Boolean).pop();
-  if (folderName) selectExplorerSeries(explorerPath, folderName);
+chooseFilesButton.addEventListener('click', () => videoFilesInput.click());
+videoFilesInput.addEventListener('change', () => {
+  const files = Array.from(videoFilesInput.files || []);
+  videoFilesInput.value = '';
+  useFiles(files);
 });
-uploadType.addEventListener('change', () => {
-  updateUploadCopy();
-  if (!fileExplorer.hidden) renderFileExplorer();
+dropZone.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  dropZone.classList.add('is-dragging');
 });
+dropZone.addEventListener('dragleave', (event) => {
+  if (!dropZone.contains(event.relatedTarget)) dropZone.classList.remove('is-dragging');
+});
+dropZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  dropZone.classList.remove('is-dragging');
+  useFiles(event.dataTransfer?.files || []);
+});
+uploadType.addEventListener('change', updateUploadCopy);
 uploadDestination.addEventListener('change', updateUploadDestinationCopy);
 uploadForm.addEventListener('submit', handleUpload);
 sharedLibrary.addEventListener('click', handleCollectionAction);
@@ -942,7 +996,13 @@ localLibrary.addEventListener('click', handleCollectionAction);
 updateUploadCopy();
 
 document.getElementById('close-player').addEventListener('click', () => playerDialog.close());
-playerDialog.addEventListener('close', clearPlayerUrls);
+playerDialog.addEventListener('close', () => {
+  clearPlayerUrls();
+  document.body.classList.remove('player-open');
+});
+playerDialog.addEventListener('click', (event) => {
+  if (event.target === playerDialog) playerDialog.close();
+});
 seasonSelect.addEventListener('change', async () => {
   updateEpisodeOptions();
   const index = sortedEpisodes(currentCollection).findIndex(
@@ -957,39 +1017,83 @@ episodeSelect.addEventListener('change', async () => {
 playbackSpeed.addEventListener('change', () => {
   videoPlayer.playbackRate = Number(playbackSpeed.value);
 });
-subtitleInput.addEventListener('change', () => {
-  const subtitle = subtitleInput.files[0];
-  if (!subtitle) return;
-  if (currentSubtitleUrl.startsWith('blob:')) URL.revokeObjectURL(currentSubtitleUrl);
-  currentSubtitleUrl = URL.createObjectURL(subtitle);
-  const track = document.createElement('track');
-  track.kind = 'subtitles';
-  track.label = subtitle.name;
-  track.srclang = 'fr';
-  track.src = currentSubtitleUrl;
-  track.default = true;
-  videoPlayer.append(track);
-  setMessage(playerMessage, 'Sous-titres chargés.');
-});
-document.getElementById('pip-button').addEventListener('click', async () => {
-  try {
-    if (!document.pictureInPictureEnabled) throw new Error('L’image dans l’image n’est pas prise en charge.');
-    await videoPlayer.requestPictureInPicture();
-  } catch (error) {
-    setMessage(playerMessage, error.message, true);
+playPauseButton.addEventListener('click', async () => {
+  if (videoPlayer.paused) {
+    try {
+      await videoPlayer.play();
+    } catch (error) {
+      setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+    }
+  } else {
+    videoPlayer.pause();
   }
+});
+seekInput.addEventListener('input', () => {
+  if (!Number.isFinite(videoPlayer.duration) || videoPlayer.duration <= 0) return;
+  videoPlayer.currentTime = Number(seekInput.value) / 1000 * videoPlayer.duration;
+});
+muteButton.addEventListener('click', () => {
+  videoPlayer.muted = !videoPlayer.muted;
+  if (!videoPlayer.muted && videoPlayer.volume === 0) videoPlayer.volume = 0.5;
+  volumeInput.value = String(videoPlayer.muted ? 0 : videoPlayer.volume);
+  updateMuteButton();
+});
+volumeInput.addEventListener('input', () => {
+  videoPlayer.volume = Number(volumeInput.value);
+  videoPlayer.muted = videoPlayer.volume === 0;
+  updateMuteButton();
 });
 document.getElementById('fullscreen-button').addEventListener('click', async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
-    else await videoPlayer.requestFullscreen();
+    else await playerShell.requestFullscreen();
   } catch (error) {
     setMessage(playerMessage, `Plein écran impossible : ${error.message}`, true);
   }
 });
+playerShell.addEventListener('pointermove', showFullscreenControls);
+playerShell.addEventListener('pointerenter', showFullscreenControls);
+playerShell.addEventListener('pointerleave', () => {
+  clearFullscreenControlsTimer();
+  if (document.fullscreenElement === playerShell) {
+    playerShell.classList.add('fullscreen-controls-hidden');
+  }
+});
+window.addEventListener('blur', () => {
+  clearFullscreenControlsTimer();
+  if (document.fullscreenElement === playerShell) {
+    playerShell.classList.add('fullscreen-controls-hidden');
+  }
+});
+window.addEventListener('focus', showFullscreenControls);
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement === playerShell) {
+    showFullscreenControls();
+  } else {
+    clearFullscreenControlsTimer();
+    playerShell.classList.remove('fullscreen-controls-hidden');
+  }
+});
+videoPlayer.addEventListener('play', updatePlayPauseButton);
+videoPlayer.addEventListener('pause', updatePlayPauseButton);
+videoPlayer.addEventListener('timeupdate', updatePlayerProgress);
+videoPlayer.addEventListener('durationchange', updatePlayerProgress);
+videoPlayer.addEventListener('volumechange', updateMuteButton);
 videoPlayer.addEventListener('ended', async () => {
-  if (autoplayNext.checked && currentEpisodeIndex + 1 < sortedEpisodes(currentCollection).length) {
+  if (currentCollection?.type === 'series' && autoplayNext.checked &&
+      currentEpisodeIndex + 1 < sortedEpisodes(currentCollection).length) {
     await showEpisode(currentEpisodeIndex + 1, true);
+  }
+});
+videoPlayer.addEventListener('click', async () => {
+  if (videoPlayer.paused) {
+    try {
+      await videoPlayer.play();
+    } catch (error) {
+      setMessage(playerMessage, `Lecture impossible : ${error.message}`, true);
+    }
+  } else {
+    videoPlayer.pause();
   }
 });
 videoPlayer.addEventListener('error', () => {

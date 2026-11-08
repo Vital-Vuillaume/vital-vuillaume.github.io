@@ -7,10 +7,10 @@
     <meta name="description" content="Exploration, mise à jour et surveillance du serveur VitaLoad.">
     <title>VitaLoad · Serveur</title>
     <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-project-header">
-    <link rel="stylesheet" href="./serveur.css?v=20261101-project-header">
+    <link rel="stylesheet" href="./serveur.css?v=20261108-refresh-glyph">
     <script src="../frontend/js/ipOrigins.js?v=20261025-shutdown" defer></script>
-    <script src="../frontend/js/script.js?v=20261101-auth-header-hidden" defer></script>
-    <script src="./serveur.js?v=20261031-access-ui" defer></script>
+    <script src="../frontend/js/script.js?v=20261108-preserve-content-type" defer></script>
+    <script src="./serveur.js?v=20261108-toolbar-icons" defer></script>
   </head>
   <body class="panel-page">
     <header class="topbar">
@@ -38,11 +38,16 @@
         <div class="explorer-toolbar">
           <nav id="breadcrumbs" class="breadcrumbs" aria-label="Chemin du dossier"></nav>
           <div class="toolbar-actions">
-            <button id="new-file" class="vl-button" type="button">Nouveau fichier</button>
+            <button id="new-file" class="vl-button vl-button-secondary" type="button">Nouveau fichier</button>
             <button id="new-directory" class="vl-button vl-button-secondary" type="button">Nouveau dossier</button>
             <button id="import-files" class="vl-button vl-button-secondary" type="button">Importer des fichiers</button>
             <button id="import-directory" class="vl-button vl-button-secondary" type="button">Importer un dossier</button>
-            <button id="refresh" class="vl-button vl-button-secondary" type="button" aria-label="Actualiser">Actualiser</button>
+            <button id="refresh" class="vl-button vl-button-secondary toolbar-icon-button" type="button" aria-label="Actualiser l’explorateur" title="Actualiser l’explorateur">
+              <span class="toolbar-icon-glyph" aria-hidden="true">↻</span>
+            </button>
+            <button id="download-all" class="vl-button vl-button-secondary toolbar-icon-button" type="button" aria-label="Tout télécharger en fichier ZIP" title="Tout télécharger en fichier ZIP">
+              <span class="toolbar-icon-glyph" aria-hidden="true">↓</span>
+            </button>
           </div>
         </div>
         <div id="file-list" class="file-grid" aria-label="Fichiers et dossiers"></div>

@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Espace de stockage privé VitaLoad.">
     <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-project-header">
-    <link rel="stylesheet" href="./stockage.css?v=20261101-quota-full-width">
+    <link rel="stylesheet" href="./stockage.css?v=20261108-download-progress">
     <script defer src="../frontend/js/ipOrigins.js"></script>
-    <script defer src="../frontend/js/script.js?v=20261101-auth-header-hidden"></script>
-    <script defer src="./stockage.js?v=20261031-access-ui"></script>
+    <script defer src="../frontend/js/script.js?v=20261108-preserve-content-type"></script>
+    <script defer src="./stockage.js?v=20261108-download-progress"></script>
     <title>VitaLoad · Stockage</title>
   </head>
   <body class="storage-page">
@@ -99,7 +99,11 @@
                 <button id="new-storage-folder" class="vl-button vl-button-secondary" type="button">Nouveau dossier</button>
                 <button id="storage-attach" class="vl-button vl-button-secondary" type="button">Importer des fichiers</button>
                 <button id="storage-import-directory" class="vl-button vl-button-secondary" type="button">Importer un dossier</button>
+                <button id="storage-download-all" class="vl-button vl-button-secondary storage-download-all-button" type="button" aria-label="Télécharger tout Stockage en ZIP" title="Télécharger tout Stockage en ZIP">↓</button>
                 <span id="selected-files" class="selected-files">Images et fichiers · 5 Gio au total</span>
+                <progress id="storage-upload-progress" class="storage-upload-progress" max="100" value="0" aria-label="Progression de l’importation" hidden></progress>
+                <span id="storage-download-status" class="storage-download-status" role="status" hidden></span>
+                <progress id="storage-download-progress" class="storage-download-progress" max="100" aria-label="Progression du téléchargement" hidden></progress>
               </div>
             </div>
             <div class="file-list-controls">

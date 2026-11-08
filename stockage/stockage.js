@@ -15,6 +15,10 @@ const messageInput = document.getElementById('message-content');
 const uploadInput = document.getElementById('storage-upload-input');
 const directoryUploadInput = document.getElementById('storage-directory-input');
 const uploadButton = document.getElementById('storage-attach');
+const uploadProgress = document.getElementById('storage-upload-progress');
+const downloadAllButton = document.getElementById('storage-download-all');
+const downloadStatus = document.getElementById('storage-download-status');
+const downloadProgress = document.getElementById('storage-download-progress');
 const sendButton = document.getElementById('send-message');
 const selectedFilesLabel = document.getElementById('selected-files');
 const deleteDialog = document.getElementById('delete-dialog');
@@ -599,12 +603,17 @@ async function loadStorage({ older = false } = {}) {
     const offset = older ? renderedItemCount : 0;
     const data = activeStorageTab === 'file'
       ? await panelAuth.request(
-        `/vital/api/panel/storage/explorer?path=${encodeURIComponent(currentPath)}&search=${encodeURIComponent(storageSearchInput.value.trim())}&sort=${encodeURIComponent(storageSortSelect.value)}&limit=${pageSize}&offset=${offset}`
+        `/vital/api/panel/storage/explorer?path=${encodeURIComponent(currentPath)}&search=${encodeURIComponent(storageSearchInput.value.trim())}&sort=${encodeURIComponent(storageSortSelect.value)}&limit=${pageSize}&offset=${offset}`,
+        { cache: 'no-store' }
       )
       : activeStorageTab === 'trash'
-        ? await panelAuth.request(`/vital/api/panel/storage/trash?limit=${pageSize}&offset=${offset}`)
+        ? await panelAuth.request(
+          `/vital/api/panel/storage/trash?limit=${pageSize}&offset=${offset}`,
+          { cache: 'no-store' }
+        )
       : await panelAuth.request(
-        `/vital/api/panel/storage?type=message&limit=${pageSize}&offset=${offset}`
+        `/vital/api/panel/storage?type=message&limit=${pageSize}&offset=${offset}`,
+        { cache: 'no-store' }
       );
     updateQuota(data);
     const itemCountLabel = activeStorageTab === 'trash'
@@ -677,6 +686,84 @@ messageForm.addEventListener('submit', async (event) => {
 });
 
 document.getElementById('storage-attach').addEventListener('click', () => uploadInput.click());
+downloadAllButton.addEventListener('click', () => {
+  const sessionId = panelAuth.getSessionId();
+  if (!sessionId) {
+    panelAuth.clearSession();
+    window.location.replace('/connexion/');
+    return;
+  }
+
+  downloadAllButton.disabled = true;
+  downloadStatus.textContent = 'Préparation de l’archive Stockage.zip…';
+  downloadStatus.hidden = false;
+  downloadProgress.removeAttribute('value');
+  downloadProgress.hidden = false;
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', window.config.getApiUrl('/vital/api/panel/storage/download'));
+  xhr.responseType = 'blob';
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
+  xhr.addEventListener('progress', (event) => {
+    if (!event.lengthComputable) return;
+    const percent = event.total > 0 ? Math.min(100, event.loaded / event.total * 100) : 0;
+    downloadProgress.value = percent;
+    downloadStatus.textContent =
+      `Téléchargement de l’archive : ${Math.round(percent)} % (${formatBytes(event.loaded)} sur ${formatBytes(event.total)}).`;
+  });
+  xhr.addEventListener('load', async () => {
+    try {
+      if (xhr.status === 401) {
+        panelAuth.clearSession();
+        window.location.replace('/connexion/');
+        return;
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        const responseText = await xhr.response.text();
+        let errorMessage = `Le téléchargement a échoué (${xhr.status}).`;
+        if (responseText) {
+          try {
+            const responseData = JSON.parse(responseText);
+            errorMessage = responseData.error || errorMessage;
+          } catch {
+            errorMessage = responseText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const objectUrl = URL.createObjectURL(xhr.response);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = 'Stockage.zip';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      notify('Archive Stockage.zip téléchargée.');
+    } catch (error) {
+      notify(error.message, 'error');
+    } finally {
+      downloadAllButton.disabled = false;
+      downloadStatus.hidden = true;
+      downloadProgress.hidden = true;
+    }
+  });
+  xhr.addEventListener('error', () => {
+    downloadAllButton.disabled = false;
+    downloadStatus.hidden = true;
+    downloadProgress.hidden = true;
+    notify('Impossible de télécharger l’archive Stockage.', 'error');
+  });
+  xhr.addEventListener('abort', () => {
+    downloadAllButton.disabled = false;
+    downloadStatus.hidden = true;
+    downloadProgress.hidden = true;
+    notify('Le téléchargement de l’archive Stockage a été interrompu.', 'error');
+  });
+  xhr.send(new URLSearchParams({ sessionId }).toString());
+});
+
 async function ensureDirectory(folderPath) {
   let parentPath = currentPath;
   for (const name of folderPath.split('/').filter(Boolean)) {
@@ -684,7 +771,8 @@ async function ensureDirectory(folderPath) {
     let exists = false;
     while (true) {
       const listing = await panelAuth.request(
-        `/vital/api/panel/storage/explorer?path=${encodeURIComponent(parentPath)}&limit=100&offset=${offset}`
+        `/vital/api/panel/storage/explorer?path=${encodeURIComponent(parentPath)}&limit=100&offset=${offset}`,
+        { cache: 'no-store' }
       );
       const matching = listing.items.find((item) => item.name === name);
       if (matching) {
@@ -708,6 +796,8 @@ async function ensureDirectory(folderPath) {
 async function uploadFiles(files, preserveFolders = false) {
   if (files.length === 0) return;
   selectedFilesLabel.textContent = `${files.length} fichier${files.length === 1 ? '' : 's'} sélectionné${files.length === 1 ? '' : 's'}`;
+  uploadProgress.value = 0;
+  uploadProgress.hidden = false;
 
   uploadButton.disabled = true;
   document.getElementById('storage-import-directory').disabled = true;
@@ -728,17 +818,19 @@ async function uploadFiles(files, preserveFolders = false) {
       const targetPath = relativePath
         ? (currentPath ? `${currentPath}/${relativePath}` : relativePath)
         : currentPath;
-      for (let start = 0; start < grouped.length; start += 100) {
-        const batch = grouped.slice(start, start + 100);
-        const body = new FormData();
-        batch.forEach((file) => body.append('files', file));
+      for (const file of grouped) {
+        selectedFilesLabel.textContent = `Importation : ${uploadedCount}/${files.length} fichier${files.length === 1 ? '' : 's'}`;
         const result = await panelAuth.request(
-          `/vital/api/panel/storage/upload?path=${encodeURIComponent(targetPath)}`, {
+          `/vital/api/panel/storage/upload-file?path=${encodeURIComponent(targetPath)}&name=${encodeURIComponent(file.name)}&mimeType=${encodeURIComponent(file.type || 'application/octet-stream')}`,
+          {
             method: 'POST',
-            body
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: file
           }
         );
-        uploadedCount += result.uploaded;
+        uploadedCount += result.uploaded || 1;
+        uploadProgress.value = Math.round(uploadedCount / files.length * 100);
+        selectedFilesLabel.textContent = `Importation : ${uploadedCount}/${files.length} fichier${files.length === 1 ? '' : 's'} (${uploadProgress.value} %)`;
       }
     }
     notify(`${uploadedCount} fichier${uploadedCount === 1 ? '' : 's'} ajouté${uploadedCount === 1 ? '' : 's'}.`);
@@ -752,6 +844,8 @@ async function uploadFiles(files, preserveFolders = false) {
     uploadButton.disabled = false;
     document.getElementById('storage-import-directory').disabled = false;
     selectedFilesLabel.textContent = 'Images et fichiers · 5 Gio au total';
+    uploadProgress.value = 0;
+    uploadProgress.hidden = true;
   }
 }
 

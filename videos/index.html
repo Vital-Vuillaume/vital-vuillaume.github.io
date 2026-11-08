@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Bibliothèque de films et séries VitaLoad.">
     <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-auth-header-hidden">
-    <link rel="stylesheet" href="./videos.css?v=20261101-file-explorer-v3">
+    <link rel="stylesheet" href="./videos.css?v=20261108-fullscreen-black-bars">
     <script defer src="../frontend/js/ipOrigins.js"></script>
     <script defer src="../frontend/js/script.js?v=20261101-auth-header-hidden"></script>
-    <script defer src="./videos.js?v=20261101-shared-api-pattern"></script>
+    <script defer src="./videos.js?v=20261108-fullscreen-autohide"></script>
     <title>VitaLoad · Vidéos</title>
   </head>
   <body class="video-page vl-modern-page">
@@ -104,23 +104,17 @@
           </label>
           <div id="drop-zone" class="video-drop-zone">
             <span class="drop-icon" aria-hidden="true">⇧</span>
-            <strong id="drop-instruction">Parcours tes dossiers pour choisir tes vidéos</strong>
-            <span id="drop-help">Sélectionne un dossier, puis choisis les films à importer.</span>
+            <strong id="drop-instruction">Choisis un ou plusieurs fichiers vidéo</strong>
+            <span id="drop-help">Dépose ici un ou plusieurs fichiers, ou clique pour les choisir. Pour une série, les noms comme S01E01 aident à reconnaître les épisodes.</span>
             <div class="drop-actions">
-              <button id="choose-folder" class="vl-button vl-button-secondary" type="button">Ouvrir un dossier</button>
+              <button id="choose-files" class="vl-button vl-button-secondary" type="button">Choisir des fichiers</button>
             </div>
-            <input id="video-folder" type="file" webkitdirectory multiple hidden>
-          </div>
-          <section id="file-explorer" class="file-explorer" aria-label="Explorateur de fichiers" hidden>
-            <nav id="explorer-breadcrumbs" class="explorer-breadcrumbs" aria-label="Emplacement actuel"></nav>
-            <button id="explorer-current-folder" class="explorer-current-folder" type="button" hidden>Choisir ce dossier comme série</button>
-            <div id="explorer-list" class="explorer-list" role="list"></div>
-            <p id="explorer-empty" class="explorer-empty" hidden>Aucun dossier ni fichier vidéo dans cet emplacement.</p>
-            <p id="explorer-hint" class="explorer-hint"></p>
+            <input id="video-files" type="file" accept="video/*,.3gp,.m4v,.mkv,.mpg,.ts" multiple hidden>
           </section>
           <p id="selected-files" class="selected-files" aria-live="polite">Aucune vidéo sélectionnée.</p>
           <button id="upload-submit" class="vl-button" type="submit">Enregistrer dans ma bibliothèque</button>
           <progress id="upload-progress" class="upload-progress" max="100" value="0" hidden></progress>
+          <span id="upload-progress-label" class="upload-progress-label" role="status" hidden></span>
           <p id="upload-message" class="video-message" role="status" aria-live="polite"></p>
         </form>
       </section>
@@ -147,9 +141,28 @@
             <h2 id="player-title">Vidéo</h2>
             <p id="player-subtitle" class="player-subtitle"></p>
           </div>
-          <button id="close-player" class="vl-button vl-button-secondary" type="button" aria-label="Fermer le lecteur">Fermer</button>
+          <button id="close-player" class="player-icon-button player-close-button" type="button" aria-label="Fermer le lecteur" title="Fermer">
+            <span aria-hidden="true">×</span>
+          </button>
         </header>
-        <video id="video-player" controls playsinline preload="metadata"></video>
+        <div class="video-player-frame">
+          <video id="video-player" playsinline preload="metadata"></video>
+          <div class="video-player-controls" aria-label="Commandes de lecture">
+            <button id="player-play-pause" class="player-icon-button" type="button" aria-label="Lire">
+              <span aria-hidden="true">▶</span>
+            </button>
+            <span id="player-current-time" class="player-time">0:00</span>
+            <input id="player-seek" class="player-seek" type="range" min="0" max="1000" value="0" aria-label="Position de lecture">
+            <span id="player-duration" class="player-time">0:00</span>
+            <button id="player-mute" class="player-icon-button" type="button" aria-label="Couper le son">
+              <span aria-hidden="true">◖))</span>
+            </button>
+            <input id="player-volume" class="player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+            <button id="fullscreen-button" class="player-icon-button" type="button" aria-label="Plein écran" title="Plein écran">
+              <span aria-hidden="true">⛶</span>
+            </button>
+          </div>
+        </div>
         <div class="player-toolbar">
           <label class="player-option" id="season-option" hidden>
             <span>Saison</span>
@@ -171,16 +184,10 @@
               <option value="2">2×</option>
             </select>
           </label>
-          <label class="player-option player-subtitle-option">
-            <span>Sous-titres (.vtt)</span>
-            <input id="subtitle-file" class="vl-input" type="file" accept=".vtt,text/vtt">
-          </label>
-          <label class="player-autonext">
+          <label id="autoplay-next-option" class="player-autonext">
             <input id="autoplay-next" type="checkbox" checked>
             <span>Lire l’épisode suivant</span>
           </label>
-          <button id="pip-button" class="vl-button vl-button-secondary" type="button">Image dans l’image</button>
-          <button id="fullscreen-button" class="vl-button vl-button-secondary" type="button">Plein écran</button>
         </div>
         <p id="player-message" class="video-message" role="status" aria-live="polite"></p>
       </div>

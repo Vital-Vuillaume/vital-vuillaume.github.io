@@ -43,6 +43,26 @@ body.panel-page.vl-modern-page {
   gap: 10px;
 }
 
+.toolbar-actions {
+  flex-wrap: wrap;
+}
+
+.toolbar-actions > .vl-button {
+  white-space: nowrap;
+}
+
+.toolbar-actions > .toolbar-icon-button {
+  width: 38px;
+  min-width: 38px;
+  padding: 8px;
+}
+
+.toolbar-icon-glyph {
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+}
+
 .account {
   color: #aab8d0;
 }
@@ -510,6 +530,10 @@ main {
   margin: 12px 0 18px;
   color: #bac8dc;
   line-height: 1.5;
+}
+
+.dialog-message.is-error {
+  color: #fca5a5;
 }
 
 .file-dialog label {

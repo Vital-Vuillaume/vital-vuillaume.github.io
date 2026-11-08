@@ -26,6 +26,7 @@ const emergencyShutdownPanel = document.getElementById('emergency-shutdown-panel
 const shutdownHelp = emergencyShutdownPanel?.querySelector('.shutdown-help');
 const fileDialog = document.getElementById('file-dialog');
 const fileDialogForm = document.getElementById('file-dialog-form');
+const fileDialogCancel = document.getElementById('file-dialog-cancel');
 const fileDialogTitle = document.getElementById('file-dialog-title');
 const fileDialogMessage = document.getElementById('file-dialog-message');
 const fileDialogLabel = document.getElementById('file-dialog-label');
@@ -43,6 +44,7 @@ let changesInProgress = false;
 let logsRequestInProgress = false;
 let shutdownInProgress = false;
 let resolveDialog;
+let dialogSubmitHandler;
 
 function hasUnsavedChanges() {
   return Boolean(selectedFile) && contentEditor.value !== savedContent;
@@ -61,8 +63,15 @@ async function waitForBackendRestart() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 2000);
     try {
-      await panelAuth.request('/vital/api/panel/auth/session', { signal: controller.signal });
-      if (disconnected) return true;
+      const session = await panelAuth.request('/vital/api/panel/auth/session', {
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      if (typeof session.username === 'string' && session.username.length > 0) {
+        if (disconnected) return true;
+      } else {
+        disconnected = true;
+      }
     } catch (error) {
       if (error.message === 'Votre session a expiré.' || error.message === 'Connexion requise.') {
         return false;
@@ -338,7 +347,7 @@ function renderEntry(entry) {
   return card;
 }
 
-async function downloadEntry(itemPath, type) {
+async function downloadEntry(itemPath, type, archiveName) {
   pageError.textContent = '';
   try {
     const sessionId = panelAuth.getSessionId();
@@ -371,7 +380,7 @@ async function downloadEntry(itemPath, type) {
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = objectUrl;
-    const itemName = itemPath.split('/').pop();
+    const itemName = archiveName || itemPath.split('/').pop();
     link.download = type === 'directory' ? `${itemName}.zip` : itemName;
     document.body.append(link);
     link.click();
@@ -386,7 +395,7 @@ async function loadDirectory(directory = currentPath) {
   pageError.textContent = '';
   if (hasUnsavedChanges() && parentPath(selectedFile) !== directory) {
     const confirmed = await confirmDiscardChanges();
-    if (!confirmed) return;
+    if (!confirmed) return false;
   }
   try {
     const data = await panelAuth.request(
@@ -407,8 +416,60 @@ async function loadDirectory(directory = currentPath) {
     for (const entry of entries) fileList.append(renderEntry(entry));
     emptyState.hidden = entries.length !== 0;
     await loadChanges();
+    return true;
   } catch (error) {
     showError(error);
+    return false;
+  }
+}
+
+async function refreshExplorer() {
+  const refreshButton = document.getElementById('refresh');
+  if (changesInProgress || saveInProgress || refreshButton.disabled) return;
+
+  if (hasUnsavedChanges() && !(await confirmDiscardChanges())) return;
+
+  refreshButton.disabled = true;
+  refreshButton.setAttribute('aria-label', 'Actualisation en cours');
+  refreshButton.title = 'Actualisation en cours';
+  try {
+    const { changes } = await panelAuth.request('/vital/api/panel/serveur/changes');
+    if (changes.length > 0) {
+      const confirmed = await showFileDialog({
+        title: 'Recharger l’explorateur ?',
+        message: `Cette action recharge les fichiers depuis le serveur et supprimera les ${changes.length} changement(s) en attente du brouillon.`,
+        confirmLabel: 'Recharger',
+        input: false
+      });
+      if (confirmed === null) return;
+    }
+
+    await panelAuth.request('/vital/api/panel/serveur/discard', { method: 'POST' });
+
+    if (selectedFile) {
+      try {
+        const data = await panelAuth.request(
+          `/vital/api/panel/serveur/file?path=${encodeURIComponent(selectedFile)}`
+        );
+        savedContent = data.content;
+        contentEditor.value = data.content;
+        updateEditorState('Explorateur actualisé depuis les fichiers du serveur.');
+      } catch (error) {
+        if (error.status !== 404) throw error;
+        clearSelection();
+      }
+    }
+
+    if (!(await loadDirectory(currentPath))) {
+      await loadDirectory('');
+    }
+    uploadMessage.textContent = 'Explorateur actualisé depuis les fichiers du serveur.';
+  } catch (error) {
+    showError(error);
+  } finally {
+    refreshButton.disabled = false;
+    refreshButton.setAttribute('aria-label', 'Actualiser l’explorateur');
+    refreshButton.title = 'Actualiser l’explorateur';
   }
 }
 
@@ -452,11 +513,13 @@ function showFileDialog({
   confirmLabel = 'Confirmer',
   input = true,
   inputType = 'text',
-  autocomplete = 'off'
+  autocomplete = 'off',
+  onSubmit = null
 }) {
   fileDialogTitle.textContent = title;
   fileDialogMessage.textContent = message;
   fileDialogMessage.hidden = !message;
+  fileDialogMessage.classList.remove('is-error');
   fileDialogLabel.textContent = label;
   fileDialogLabel.hidden = !input;
   fileDialogInput.hidden = !input;
@@ -464,6 +527,7 @@ function showFileDialog({
   fileDialogInput.autocomplete = autocomplete;
   fileDialogInput.value = value;
   fileDialogConfirm.textContent = confirmLabel;
+  dialogSubmitHandler = onSubmit;
   fileDialog.returnValue = '';
 
   return new Promise((resolve) => {
@@ -474,11 +538,29 @@ function showFileDialog({
   });
 }
 
-fileDialogForm.addEventListener('submit', (event) => {
+fileDialogForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (resolveDialog) resolveDialog(fileDialogInput.value);
-  resolveDialog = null;
-  fileDialog.close('confirm');
+  if (!dialogSubmitHandler) {
+    fileDialog.close('confirm');
+    return;
+  }
+
+  fileDialogConfirm.disabled = true;
+  fileDialogCancel.disabled = true;
+  try {
+    if (await dialogSubmitHandler(fileDialogInput.value)) {
+      fileDialog.close('confirm');
+    }
+  } catch (error) {
+    fileDialogMessage.textContent = error.message || 'Impossible de confirmer cette action.';
+    fileDialogMessage.hidden = false;
+    fileDialogMessage.classList.add('is-error');
+  } finally {
+    if (fileDialog.open) {
+      fileDialogConfirm.disabled = false;
+      fileDialogCancel.disabled = false;
+    }
+  }
 });
 
 document.getElementById('file-dialog-cancel').addEventListener('click', () => {
@@ -486,11 +568,16 @@ document.getElementById('file-dialog-cancel').addEventListener('click', () => {
 });
 
 fileDialog.addEventListener('close', () => {
-  if (resolveDialog) resolveDialog(null);
+  const result = fileDialog.returnValue === 'confirm' ? fileDialogInput.value : null;
+  const finishDialog = resolveDialog;
   resolveDialog = null;
+  dialogSubmitHandler = null;
+  fileDialogConfirm.disabled = false;
+  fileDialogCancel.disabled = false;
   fileDialogInput.value = '';
   fileDialogInput.type = 'text';
   fileDialogInput.autocomplete = 'off';
+  if (finishDialog) finishDialog(result);
 });
 
 async function createEntry(type) {
@@ -574,7 +661,6 @@ async function deleteEntry(itemPath, name) {
 
 document.getElementById('new-file').addEventListener('click', () => createEntry('file'));
 document.getElementById('new-directory').addEventListener('click', () => createEntry('directory'));
-document.getElementById('refresh').addEventListener('click', () => loadDirectory());
 document.getElementById('import-files').addEventListener('click', () => {
   document.getElementById('file-upload-input').click();
 });
@@ -586,14 +672,15 @@ async function importSelection(input) {
   const files = Array.from(input.files || []);
   input.value = '';
   if (files.length === 0) return;
-
-  const formData = new FormData();
-  const paths = files.map((file) => {
-    const relativePath = file.webkitRelativePath || file.name;
-    formData.append('files', file);
-    return relativePath;
-  });
-  formData.append('paths', JSON.stringify(paths));
+  const totalSize = files.reduce((total, file) => total + file.size, 0);
+  if (files.length > 300) {
+    showError(new Error('Un import ne peut pas contenir plus de 300 fichiers.'));
+    return;
+  }
+  if (totalSize > 100 * 1024 * 1024) {
+    showError(new Error('La taille totale des fichiers dépasse la limite de 100 Mo.'));
+    return;
+  }
 
   pageError.textContent = '';
   uploadMessage.textContent = 'Import en cours…';
@@ -602,15 +689,27 @@ async function importSelection(input) {
     document.getElementById('import-directory')
   ];
   importButtons.forEach((button) => { button.disabled = true; });
+  let uploaded = 0;
   try {
-    const result = await panelAuth.request('/vital/api/panel/serveur/upload', {
-      method: 'POST',
-      body: formData
-    });
-    uploadMessage.textContent = `${result.uploaded} fichier(s) ajouté(s) au brouillon.`;
+    for (const file of files) {
+      const relativePath = file.webkitRelativePath || file.name;
+      uploadMessage.textContent = `Import de ${relativePath} (${uploaded + 1}/${files.length})…`;
+      await panelAuth.request(
+        `/vital/api/panel/serveur/upload-file?path=${encodeURIComponent(relativePath)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: file
+        }
+      );
+      uploaded += 1;
+    }
+    uploadMessage.textContent = `${uploaded} fichier(s) ajouté(s) au brouillon.`;
     await loadDirectory();
   } catch (error) {
-    uploadMessage.textContent = '';
+    uploadMessage.textContent = uploaded > 0
+      ? `${uploaded} fichier(s) importé(s) avant l’erreur.`
+      : '';
     showError(error);
   } finally {
     importButtons.forEach((button) => { button.disabled = false; });
@@ -768,28 +867,49 @@ emergencyShutdownButton?.addEventListener('click', async () => {
   });
   if (confirmed === null) return;
 
+  shutdownInProgress = true;
+  emergencyShutdownButton.disabled = true;
   const password = await showFileDialog({
     title: 'Confirmer avec ton mot de passe',
     message: 'Saisis le mot de passe de ton compte pour envoyer la demande d’arrêt.',
     label: 'Mot de passe',
     confirmLabel: 'Éteindre le serveur',
     inputType: 'password',
-    autocomplete: 'current-password'
-  });
-  if (password === null || password.length === 0) return;
+    autocomplete: 'current-password',
+    onSubmit: async (enteredPassword) => {
+      if (enteredPassword.length === 0) {
+        fileDialogMessage.textContent = 'Saisis ton mot de passe.';
+        fileDialogMessage.hidden = false;
+        fileDialogMessage.classList.add('is-error');
+        return false;
+      }
 
-  shutdownInProgress = true;
-  emergencyShutdownButton.disabled = true;
-  emergencyShutdownButton.textContent = 'Arrêt en cours…';
-  if (shutdownHelp) shutdownHelp.textContent = 'Envoi de la demande d’arrêt au backend…';
-  try {
-    await panelAuth.request('/vital/api/panel/serveur/shutdown', {
-      method: 'POST',
-      body: JSON.stringify({ password })
-    });
-    if (shutdownHelp) shutdownHelp.textContent = 'Confirmation reçue. Le backend s’arrête ; redémarre Node manuellement pour remettre le site en ligne.';
-  } catch (error) {
-    if (shutdownHelp) shutdownHelp.textContent = error.message || 'Impossible d’arrêter le serveur.';
+      emergencyShutdownButton.textContent = 'Arrêt en cours…';
+      if (shutdownHelp) shutdownHelp.textContent = 'Vérification du mot de passe…';
+      try {
+        const result = await panelAuth.request('/vital/api/panel/serveur/shutdown', {
+          method: 'POST',
+          body: JSON.stringify({ password: enteredPassword })
+        });
+        if (result.shutdownScheduled !== true) {
+          throw new Error(result.error || 'Le serveur n’a pas confirmé la demande d’arrêt.');
+        }
+        emergencyShutdownButton.textContent = 'Arrêt confirmé';
+        if (shutdownHelp) shutdownHelp.textContent = 'Confirmation reçue. Le backend s’arrête ; redémarre Node manuellement pour remettre le site en ligne.';
+        return true;
+      } catch (error) {
+        fileDialogMessage.textContent = error.message || 'Impossible d’arrêter le serveur.';
+        fileDialogMessage.hidden = false;
+        fileDialogMessage.classList.add('is-error');
+        shutdownInProgress = false;
+        emergencyShutdownButton.disabled = false;
+        emergencyShutdownButton.textContent = 'Arrêt d’urgence';
+        if (shutdownHelp) shutdownHelp.textContent = 'La demande a échoué. Vérifie le message affiché dans la fenêtre.';
+        return false;
+      }
+    }
+  });
+  if (password === null) {
     shutdownInProgress = false;
     emergencyShutdownButton.disabled = false;
     emergencyShutdownButton.textContent = 'Arrêt d’urgence';
@@ -823,6 +943,10 @@ document.getElementById('clear-terminal').addEventListener('click', () => {
 });
 
 document.getElementById('refresh-logs').addEventListener('click', () => loadServerLogs());
+document.getElementById('refresh').addEventListener('click', refreshExplorer);
+document.getElementById('download-all').addEventListener('click', () => {
+  downloadEntry('.', 'directory', 'js-backend');
+});
 window.setInterval(() => loadServerLogs(), 5000);
 
 async function initialize() {
