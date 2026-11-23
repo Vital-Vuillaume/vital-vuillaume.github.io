@@ -2527,7 +2527,7 @@ async function requestSharedPlaybackUrl(videoId) {
   if (typeof data.streamPath !== 'string' || !data.streamPath.startsWith('/vital/api/videos/')) {
     throw new Error('Le serveur a renvoyé une adresse de lecture invalide.');
   }
-  return `https://${window.config.ipServer}${data.streamPath}`;
+  return window.config.getApiUrl(data.streamPath);
 }
 
 async function showEpisode(index, shouldPlay = false) {
