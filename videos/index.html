@@ -6,10 +6,10 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Bibliothèque de films et séries VitaLoad.">
     <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-auth-header-hidden">
-    <link rel="stylesheet" href="./videos.css?v=20261108-shared-local-cache">
+    <link rel="stylesheet" href="./videos.css?v=20261123-streaming-modal">
     <script defer src="../frontend/js/ipOrigins.js"></script>
-    <script defer src="../frontend/js/script.js?v=20261101-auth-header-hidden"></script>
-    <script defer src="./videos.js?v=20261108-shared-video-chunks"></script>
+    <script defer src="../frontend/js/script.js?v=account-data-sync"></script>
+    <script defer src="./videos.js?v=account-data-sync"></script>
     <title>VitaLoad · Vidéos</title>
   </head>
   <body class="video-page vl-modern-page">
@@ -28,50 +28,61 @@
           </div>
           <p class="library-usage">Détail par film, série et épisode</p>
         </div>
-        <div class="storage-overview-grid">
+        <div class="storage-overview-grid is-local-only">
           <article class="storage-card" aria-labelledby="local-storage-title">
             <div class="storage-card-heading">
-              <h3 id="local-storage-title">Ma bibliothèque locale</h3>
-              <span class="storage-scope">Ce navigateur</span>
+              <h3 id="local-storage-title">Stockage local</h3>
+              <span class="storage-scope">Ma bibliothèque</span>
             </div>
             <div class="storage-metrics">
               <p><span>Espace des vidéos</span><strong id="local-storage-used">Calcul…</strong></p>
               <p><span>Libre estimé</span><strong id="local-storage-available">Calcul…</strong></p>
-              <p><span>Quota du navigateur</span><strong id="local-storage-quota">Calcul…</strong></p>
+              <p><span>Quota maximal estimé par le navigateur</span><strong id="local-storage-quota">Calcul…</strong></p>
             </div>
             <progress id="local-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace du navigateur utilisé"></progress>
-            <p id="local-storage-note" class="storage-note">Le quota et l’espace libre sont estimés par le navigateur pour ce site.</p>
+            <p id="local-storage-note" class="storage-note">Le quota dépend du navigateur et de l’espace disponible sur l’appareil. La bibliothèque demandera aussi le stockage persistant pour éviter son effacement automatique.</p>
             <div id="local-storage-details" class="storage-details"></div>
             <p id="local-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque locale.</p>
           </article>
-          <article class="storage-card" aria-labelledby="shared-storage-title">
+          <article id="shared-storage-card" class="storage-card" aria-labelledby="shared-storage-title" hidden>
             <div class="storage-card-heading">
               <h3 id="shared-storage-title">Bibliothèque partagée</h3>
-              <span class="storage-scope">Serveur · quota 10 Gio</span>
+              <span class="storage-scope">Serveur · quota 20 Gio</span>
             </div>
             <div class="storage-metrics">
               <p><span>Espace des vidéos</span><strong id="shared-storage-used">Chargement…</strong></p>
               <p><span>Libre sur le serveur</span><strong id="shared-storage-available">Chargement…</strong></p>
-              <p><span>Quota serveur</span><strong id="shared-storage-quota">10 Gio</strong></p>
+              <p><span>Quota serveur</span><strong id="shared-storage-quota">20 Gio</strong></p>
             </div>
             <progress id="shared-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace serveur utilisé"></progress>
-            <p id="shared-storage-note" class="storage-note">Les vidéos partagées sont visibles par tous.</p>
-            <p class="storage-note">Au premier visionnage, chaque vidéo partagée est téléchargée puis mise en cache sur cet appareil. Son espace libre peut donc diminuer.</p>
+            <p id="shared-storage-note" class="storage-note">Visibles uniquement aux comptes ayant le droit d’accès Vidéos.</p>
+            <p class="storage-note">Les vidéos partagées sont lues en continu depuis le serveur. Le navigateur met temporairement en mémoire les données nécessaires à la lecture, sans enregistrer le film complet dans IndexedDB.</p>
             <div id="shared-storage-details" class="storage-details"></div>
             <p id="shared-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque partagée.</p>
           </article>
         </div>
       </section>
 
-      <section id="shared-library-panel" class="videos-panel" aria-labelledby="shared-library-title">
+      <section id="shared-library-panel" class="videos-panel" aria-labelledby="shared-library-title" hidden>
         <div class="videos-panel-heading">
           <div>
-            <p class="videos-eyebrow">Bibliothèque publique</p>
-            <h2 id="shared-library-title">Partagée par le superadmin</h2>
+            <p class="videos-eyebrow">POUR TOI · VITALOAD</p>
+            <h2 id="shared-library-title">Films partagés par VitaLoad</h2>
+            <p id="shared-library-counts" class="library-counts" aria-live="polite">Chargement…</p>
           </div>
           <p id="shared-library-usage" class="library-usage">Chargement…</p>
         </div>
+        <label class="library-search">
+          <span class="sr-only">Rechercher un film ou une série</span>
+          <input id="shared-library-search" class="vl-input" type="search" placeholder="Saisis un titre…" autocomplete="off">
+        </label>
+        <nav class="library-filters" aria-label="Filtrer la bibliothèque partagée">
+          <button type="button" class="library-filter is-active" data-library-filter="all" aria-pressed="true">Tout</button>
+          <button type="button" class="library-filter" data-library-filter="movie">Films</button>
+          <button type="button" class="library-filter" data-library-filter="series">Séries</button>
+        </nav>
         <div id="shared-library" class="video-library" aria-live="polite"></div>
+        <p id="shared-library-no-results" class="library-empty" hidden>Aucun titre ne correspond à la recherche.</p>
         <p id="shared-library-message" class="video-message is-error" role="status" hidden></p>
         <p id="shared-library-empty" class="library-empty" hidden>Aucun film ou série n’a encore été partagé.</p>
       </section>
@@ -89,7 +100,7 @@
             <span>Destination</span>
             <select id="upload-destination" class="vl-input" name="destination">
               <option value="local">Garder uniquement dans ma bibliothèque locale</option>
-              <option value="shared">Partager avec tout le monde (serveur)</option>
+              <option value="shared">Partager avec les comptes autorisés (serveur)</option>
             </select>
           </label>
           <label class="video-field">
@@ -103,14 +114,44 @@
             <span>Titre de la série</span>
             <input id="upload-title" class="vl-input" name="title" type="text" maxlength="200">
           </label>
+          <div class="video-field cover-field">
+            <span>Image du film ou de la série <span class="optional-label">(facultative)</span></span>
+            <div class="cover-picker">
+              <div id="cover-preview" class="cover-preview" aria-live="polite">
+                <span>Aucune image choisie</span>
+              </div>
+              <div class="cover-picker-actions">
+                <button id="choose-cover" class="vl-button vl-button-secondary" type="button">Choisir une image</button>
+                <button id="remove-cover" class="vl-button vl-button-secondary" type="button" aria-label="Retirer l’image choisie" title="Retirer l’image" hidden>Retirer</button>
+                <input id="cover-file" class="visually-hidden-file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              </div>
+              <p id="cover-help" class="video-message">JPG, PNG ou WebP · jusqu’à 8 Mio. Pour plusieurs films, une affiche différente peut être choisie pour chacun.</p>
+            </div>
+          </div>
+          <section id="movie-covers-list" class="movie-covers-list" aria-label="Affiches des films importés" hidden></section>
           <div id="drop-zone" class="video-drop-zone">
-            <span class="drop-icon" aria-hidden="true">⇧</span>
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v4h16v-4"/></svg>
+            </span>
             <strong id="drop-instruction">Choisis un ou plusieurs fichiers vidéo</strong>
-            <span id="drop-help">Dépose ici un ou plusieurs fichiers, ou clique pour les choisir. Pour une série, les noms comme S01E01 aident à reconnaître les épisodes.</span>
+            <span id="drop-help">Dépose ici un ou plusieurs fichiers, ou clique pour les choisir.</span>
             <div class="drop-actions">
               <button id="choose-files" class="vl-button vl-button-secondary" type="button">Choisir des fichiers</button>
+              <button id="choose-folder" class="vl-button vl-button-secondary" type="button">Choisir un dossier</button>
             </div>
             <input id="video-files" type="file" accept="video/*,.3gp,.m4v,.mkv,.mpg,.ts" multiple hidden>
+            <input id="video-folder" type="file" accept="video/*,.3gp,.m4v,.mkv,.mpg,.ts" webkitdirectory directory multiple hidden>
+          </div>
+          <div id="folder-file-picker" class="folder-file-picker" hidden>
+            <div class="folder-file-picker-heading">
+              <strong id="folder-name">Choisis les vidéos du dossier à ajouter</strong>
+              <button id="add-folder-files" class="vl-button vl-button-secondary" type="button">Ajouter les fichiers sélectionnés</button>
+            </div>
+            <div id="folder-file-list" class="folder-file-list"></div>
+          </div>
+          <section id="series-seasons" class="series-seasons" hidden aria-label="Fichiers des saisons">
+            <div id="series-season-rows" class="series-season-rows"></div>
+            <button id="add-season" class="vl-button vl-button-secondary" type="button">Ajouter une saison</button>
           </section>
           <p id="selected-files" class="selected-files" aria-live="polite">Aucune vidéo sélectionnée.</p>
           <button id="upload-submit" class="vl-button" type="submit">Enregistrer dans ma bibliothèque</button>
@@ -120,7 +161,7 @@
         </form>
       </section>
 
-      <section class="videos-panel" aria-labelledby="local-library-title">
+      <section id="local-library-panel" class="videos-panel" aria-labelledby="local-library-title">
         <div class="videos-panel-heading">
           <div>
             <p class="videos-eyebrow">Stockage local</p>
@@ -129,10 +170,57 @@
           <p class="library-usage">Enregistrée dans ce navigateur (IndexedDB)</p>
         </div>
         <p class="local-storage-note">Les films personnels restent sur cet appareil. La disponibilité dépend de l’espace attribué au navigateur et de ses règles de conservation.</p>
+        <label class="library-search">
+          <span class="sr-only">Rechercher dans ma bibliothèque</span>
+          <input id="local-library-search" class="vl-input" type="search" placeholder="Saisis un titre…" autocomplete="off">
+        </label>
+        <nav class="library-filters" aria-label="Filtrer ma bibliothèque">
+          <button type="button" class="library-filter is-active" data-library-filter="all" aria-pressed="true">Tout</button>
+          <button type="button" class="library-filter" data-library-filter="movie">Films</button>
+          <button type="button" class="library-filter" data-library-filter="series">Séries</button>
+        </nav>
         <div id="local-library" class="video-library" aria-live="polite"></div>
+        <p id="local-library-no-results" class="library-empty" hidden>Aucun titre ne correspond à la recherche.</p>
         <p id="local-library-empty" class="library-empty">Ta bibliothèque locale est vide. Sélectionne des vidéos ou un dossier pour commencer.</p>
       </section>
     </main>
+
+    <dialog id="series-editor-dialog" class="series-editor-dialog">
+      <section class="series-editor-modal">
+        <header class="series-modal-heading">
+          <div>
+            <p id="series-editor-eyebrow" class="videos-eyebrow">GESTION DE LA SÉRIE</p>
+            <h2 id="series-editor-title">Modifier la série</h2>
+            <p id="series-editor-subtitle" class="series-modal-subtitle">Gère les saisons et l’ordre des épisodes.</p>
+          </div>
+          <button id="close-series-editor" class="icon-button" type="button" aria-label="Fermer" title="Fermer">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+        <div id="series-editor-host"></div>
+      </section>
+    </dialog>
+
+    <dialog id="app-dialog" class="app-dialog">
+      <form id="app-dialog-form" class="app-dialog-card" method="dialog">
+        <button id="app-dialog-close" class="icon-button app-dialog-close" type="button" aria-label="Fermer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+        <p id="app-dialog-eyebrow" class="videos-eyebrow">VitaLoad</p>
+        <h2 id="app-dialog-title"></h2>
+        <p id="app-dialog-message" class="app-dialog-message"></p>
+        <label id="app-dialog-input-wrap" class="video-field" hidden>
+          <span id="app-dialog-input-label"></span>
+          <input id="app-dialog-input" class="vl-input" type="text" maxlength="200" autocomplete="off">
+        </label>
+        <div class="app-dialog-actions">
+          <button id="app-dialog-cancel" class="vl-button vl-button-secondary" type="button">Annuler</button>
+          <button id="app-dialog-confirm" class="vl-button" type="submit">Confirmer</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="video-toast" class="video-toast" role="status" aria-live="polite" hidden></div>
 
     <dialog id="video-player-dialog" class="video-player-dialog">
       <div class="player-shell">
@@ -141,15 +229,19 @@
             <p id="player-kind" class="videos-eyebrow">Lecture</p>
             <h2 id="player-title">Vidéo</h2>
             <p id="player-subtitle" class="player-subtitle"></p>
+            <p id="player-share-note" class="player-share-note"></p>
           </div>
-          <button id="close-player" class="player-icon-button player-close-button" type="button" aria-label="Fermer le lecteur" title="Fermer">
-            <span aria-hidden="true">×</span>
-          </button>
+          <div class="player-heading-actions">
+            <button id="copy-player-link" class="vl-button vl-button-secondary" type="button">Copier le lien</button>
+            <button id="close-player" class="player-icon-button player-close-button" type="button" aria-label="Fermer le lecteur" title="Fermer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
         </header>
         <div class="video-player-frame">
-          <video id="video-player" playsinline preload="metadata"></video>
+          <video id="video-player" playsinline preload="metadata" crossorigin="anonymous" referrerpolicy="no-referrer"></video>
           <div class="video-player-controls" aria-label="Commandes de lecture">
-            <button id="player-play-pause" class="player-icon-button" type="button" aria-label="Lire">
+            <button id="player-play-pause" class="player-icon-button player-play-button" type="button" aria-label="Lire">
               <span aria-hidden="true">▶</span>
             </button>
             <span id="player-current-time" class="player-time">0:00</span>
@@ -164,8 +256,7 @@
             </button>
           </div>
         </div>
-        <progress id="shared-download-progress" class="shared-download-progress" max="100" hidden aria-label="Téléchargement de la vidéo"></progress>
-        <div class="player-toolbar">
+        <div id="player-episode-navigation" class="player-episode-navigation" hidden>
           <label class="player-option" id="season-option" hidden>
             <span>Saison</span>
             <select id="season-select" class="vl-input"></select>
@@ -173,6 +264,12 @@
           <label class="player-option" id="episode-option" hidden>
             <span>Épisode</span>
             <select id="episode-select" class="vl-input"></select>
+          </label>
+        </div>
+        <div class="player-toolbar">
+          <label class="player-option player-title-option">
+            <span>Dans la bibliothèque</span>
+            <select id="collection-select" class="vl-input"></select>
           </label>
           <label class="player-option">
             <span>Vitesse</span>
@@ -192,6 +289,10 @@
           </label>
         </div>
         <p id="player-message" class="video-message" role="status" aria-live="polite"></p>
+        <section id="player-recommendations" class="player-recommendations" aria-labelledby="player-recommendations-title" hidden>
+          <h3 id="player-recommendations-title">À découvrir aussi</h3>
+          <div id="player-recommendations-list" class="video-library player-recommendations-list"></div>
+        </section>
       </div>
     </dialog>
   </body>

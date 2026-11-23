@@ -1075,11 +1075,20 @@ function selectStorageTab(tab) {
   }
   if (tab !== 'file') closeFileEditor();
   activeStorageTab = tab;
-  localStorage.setItem(storageTabKey, tab);
   updateStorageTabView();
   renderedItemCount = 0;
   clearNotification();
   loadStorage();
+  if (!panelAuth.getSessionId()) {
+    localStorage.setItem(storageTabKey, tab);
+    return;
+  }
+  void window.VitaLoadPanelData.save('storageActiveTab', tab)
+    .then(() => localStorage.removeItem(storageTabKey))
+    .catch((error) => {
+      localStorage.setItem(storageTabKey, tab);
+      notify(`Préférence de l’onglet non synchronisée : ${error.message}`, 'error');
+    });
 }
 
 function updateStorageTabView() {
@@ -1151,6 +1160,19 @@ async function initialize() {
     if (session.role !== 'superadmin' && !session.allowedSites?.includes('stockage')) {
       showDenied('Votre compte ne dispose pas d’un accès au site Stockage.');
       return;
+    }
+    try {
+      const localEntry = localStorage.getItem(storageTabKey);
+      const accountData = await window.VitaLoadPanelData.loadAndMigrate(
+        localEntry && ['message', 'file', 'trash'].includes(localEntry)
+          ? { storageActiveTab: { value: localEntry, localStorageKey: storageTabKey } }
+          : {}
+      );
+      if (['message', 'file', 'trash'].includes(accountData?.storageActiveTab)) {
+        activeStorageTab = accountData.storageActiveTab;
+      }
+    } catch (error) {
+      notify(`La préférence de Stockage n’a pas pu être synchronisée : ${error.message}`, 'error');
     }
     storageApp.hidden = false;
     updateStorageTabView();

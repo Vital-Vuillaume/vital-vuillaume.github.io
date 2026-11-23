@@ -33,6 +33,16 @@
     outline: none;
 }
 
+.note-sync-status {
+    margin: 0 0 8px;
+    color: #b45309;
+    font-size: 0.9rem;
+}
+
+.note-sync-status[hidden] {
+    display: none;
+}
+
 .blockWrite.active {
     position: absolute;
     width: calc(100% - 40px);

@@ -21,53 +21,137 @@ const btnOpen = document.querySelector(".btnOpen");
 const btnSave = document.querySelector(".btnSave");
 
 const fileTxt = document.querySelector(".fileTxt");
-
-
-
-
+const noteSyncStatus = document.getElementById("note-sync-status");
 const props = ["background", "color"];
 
 let size = false;
-
 let resizeTextarea;
+let noteSaveTimer;
+let styleSaveTimer;
+let noteSaveQueue = Promise.resolve();
 
+function readLocalData(key) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error(`Impossible de lire la donnée locale ${key} :`, error);
+    return null;
+  }
+}
 
-const savedText = JSON.parse(localStorage.getItem("txt"));
+let savedText = readLocalData("txt");
+let saved = readLocalData("modify");
 
-if (savedText) {
-  writeTxt.value = savedText.text;
-  fileTxt.value = savedText.fileName;
+function showNoteSyncError(error) {
+  noteSyncStatus.textContent = `Synchronisation du compte impossible : ${error.message}. Les modifications restent enregistrées localement.`;
+  noteSyncStatus.hidden = false;
+}
+
+function saveLocalDraft(key, value) {
+  const localKey = key === "notes" ? "txt" : "modify";
+  try {
+    localStorage.setItem(localKey, JSON.stringify(value));
+  } catch (error) {
+    console.error("Impossible d’enregistrer le brouillon local :", error);
+    noteSyncStatus.textContent = "Le brouillon local n’a pas pu être enregistré; la synchronisation du compte va être tentée.";
+    noteSyncStatus.hidden = false;
+  }
+}
+
+function saveAccountData(key, value) {
+  noteSaveQueue = noteSaveQueue
+    .catch(() => {})
+    .then(() => window.VitaLoadPanelData.save(key, value))
+    .then(() => {
+      const localKey = key === "notes" ? "txt" : "modify";
+      if (localStorage.getItem(localKey) === JSON.stringify(value)) {
+        localStorage.removeItem(localKey);
+      }
+    })
+    .catch((error) => {
+      showNoteSyncError(error);
+      if (key === "notes") {
+        localStorage.setItem("txt", JSON.stringify(value));
+      } else if (key === "noteAppearance") {
+        localStorage.setItem("modify", JSON.stringify(value));
+      }
+      throw error;
+    });
+  return noteSaveQueue;
 }
 
 function saveText() {
-  localStorage.setItem("txt", JSON.stringify({
-    text: writeTxt.value,
-    fileName: fileTxt.value,
-  }));
-}
-
-
-const saved = JSON.parse(localStorage.getItem("modify"));
-
-if (saved) {
-  writeTxt.style.background = saved.background || "";
-  writeTxt.style.color = saved.color || "";
-  writeTxt.style.fontSize = saved.fontSize || "";
-  size = saved.resize || false;
+  const value = { text: writeTxt.value, fileName: fileTxt.value };
+  if (!window.VitaLoadPanelAuth.getSessionId()) {
+    localStorage.setItem("txt", JSON.stringify(value));
+    return;
+  }
+  saveLocalDraft("notes", value);
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(() => {
+    void saveAccountData("notes", value).catch(() => {});
+  }, 450);
 }
 
 function saveStyles() {
-  localStorage.setItem("modify", JSON.stringify({
+  const value = {
     background: writeTxt.style.background,
     color: writeTxt.style.color,
     fontSize: writeTxt.style.fontSize,
     resize: size,
-  }));
+  };
+  if (!window.VitaLoadPanelAuth.getSessionId()) {
+    localStorage.setItem("modify", JSON.stringify(value));
+    return;
+  }
+  saveLocalDraft("noteAppearance", value);
+  clearTimeout(styleSaveTimer);
+  styleSaveTimer = setTimeout(() => {
+    void saveAccountData("noteAppearance", value).catch(() => {});
+  }, 150);
 }
 
+async function initializeNoteData() {
+  const isSignedIn = Boolean(window.VitaLoadPanelAuth?.getSessionId());
+  if (isSignedIn) writeBlock.inert = true;
+  try {
+    if (isSignedIn) {
+      try {
+        const localEntries = {};
+        if (savedText && typeof savedText.text === "string" && typeof savedText.fileName === "string") {
+          localEntries.notes = { value: savedText, localStorageKey: "txt" };
+        }
+        if (saved && typeof saved === "object") {
+          localEntries.noteAppearance = { value: saved, localStorageKey: "modify" };
+        }
+        const accountData = await window.VitaLoadPanelData.loadAndMigrate(localEntries);
+        if (accountData?.notes) savedText = accountData.notes;
+        if (accountData?.noteAppearance) saved = accountData.noteAppearance;
+      } catch (error) {
+        showNoteSyncError(error);
+        console.error("Impossible de charger les données de notes du compte :", error);
+      }
+    }
+    if (savedText) {
+      writeTxt.value = savedText.text;
+      fileTxt.value = savedText.fileName;
+    }
+    if (saved) {
+      writeTxt.style.background = saved.background || "";
+      writeTxt.style.color = saved.color || "";
+      writeTxt.style.fontSize = saved.fontSize || "";
+      size = saved.resize || false;
+    }
+    Param();
+    SizeMode();
+  } finally {
+    if (isSignedIn) writeBlock.inert = false;
+  }
+}
 
-Param()
-SizeMode();
+void initializeNoteData();
 
 function SizeMode() {
   if (size) {
@@ -134,8 +218,20 @@ btnSize.onclick = () => {
 };
 
 btnReset.onclick = () => {
-  localStorage.removeItem("modify");
-  location.reload();
+  if (!window.VitaLoadPanelAuth.getSessionId()) {
+    localStorage.removeItem("modify");
+    location.reload();
+    return;
+  }
+  clearTimeout(styleSaveTimer);
+  void noteSaveQueue
+    .catch(() => {})
+    .then(() => window.VitaLoadPanelData.save("noteAppearance", null))
+    .then(() => {
+      localStorage.removeItem("modify");
+      location.reload();
+    })
+    .catch(showNoteSyncError);
 }
 
 writeTxt.addEventListener("input", () => {

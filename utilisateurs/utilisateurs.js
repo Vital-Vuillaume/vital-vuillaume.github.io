@@ -9,6 +9,11 @@ const usersEmpty = document.getElementById('users-empty');
 const usersStatus = document.getElementById('users-status');
 const createRole = createUserForm.elements.role;
 const createSiteInputs = [...createUserForm.querySelectorAll('input[name="allowedSites"]')];
+const assignableSites = [
+  { id: 'serveur', label: 'Serveur' },
+  { id: 'stockage', label: 'Stockage' },
+  { id: 'videos', label: 'Vidéos' }
+];
 
 function showDenied(message) {
   usersApp.hidden = true;
@@ -33,7 +38,7 @@ function createSiteCheckbox(site, checked, disabled = false) {
   input.checked = checked;
   input.disabled = disabled;
   const text = document.createElement('span');
-  text.textContent = site === 'serveur' ? 'Serveur' : 'Stockage';
+  text.textContent = assignableSites.find(({ id }) => id === site)?.label || site;
   label.append(input, text);
   return label;
 }
@@ -73,8 +78,8 @@ function createUserRow(user, currentUser) {
   const siteLegend = document.createElement('legend');
   siteLegend.textContent = 'Sites';
   siteAccess.append(siteLegend);
-  const siteInputs = ['serveur', 'stockage'].map((site) => {
-    const inputLabel = createSiteCheckbox(site, user.allowedSites.includes(site), user.role === 'superadmin');
+  const siteInputs = assignableSites.map(({ id }) => {
+    const inputLabel = createSiteCheckbox(id, user.allowedSites.includes(id), user.role === 'superadmin');
     const input = inputLabel.querySelector('input');
     siteAccess.append(inputLabel);
     return input;

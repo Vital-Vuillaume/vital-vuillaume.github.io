@@ -130,6 +130,34 @@ window.VitaLoadPanelAuth = {
     }
 };
 
+window.VitaLoadPanelData = {
+    async loadAndMigrate(localEntries = {}) {
+        if (!window.VitaLoadPanelAuth.getSessionId()) return null;
+        const response = await window.VitaLoadPanelAuth.request('/vital/api/panel/data');
+        const data = response.data || {};
+        for (const [key, entry] of Object.entries(localEntries)) {
+            if (!entry || !Object.prototype.hasOwnProperty.call(entry, 'value')) continue;
+            await this.save(key, entry.value);
+            data[key] = entry.value;
+            if (entry.localStorageKey) localStorage.removeItem(entry.localStorageKey);
+        }
+        return data;
+    },
+    async save(key, value) {
+        if (!window.VitaLoadPanelAuth.getSessionId()) {
+            throw new Error('Connexion requise pour enregistrer les données du compte.');
+        }
+        await window.VitaLoadPanelAuth.request(
+            `/vital/api/panel/data/${encodeURIComponent(key)}`,
+            {
+                method: 'PUT',
+                body: JSON.stringify({ value })
+            }
+        );
+        return true;
+    }
+};
+
 const panelHeader = installVitaLoadHeader();
 const info = document.querySelector(".info");
 const logout = document.querySelector(".logout");
