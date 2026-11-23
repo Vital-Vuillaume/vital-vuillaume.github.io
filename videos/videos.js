@@ -2503,8 +2503,9 @@ async function requestSharedPlaybackUrl(videoId) {
     window.location.replace('/connexion/');
     throw new Error('Connexion requise.');
   }
-  const endpoint = `https://${window.config.ipServer}/vital/api/videos/shared/` +
-    `${encodeURIComponent(videoId)}/playback-ticket`;
+  const endpoint = window.config.getApiUrl(
+    `/vital/api/videos/shared/${encodeURIComponent(videoId)}/playback-ticket`
+  );
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'X-Panel-Session': sessionId }
