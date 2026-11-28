@@ -2,13 +2,36 @@ const panelAuth = window.VitaLoadPanelAuth;
 const form = document.getElementById('login-form');
 const errorMessage = document.getElementById('login-error');
 
+function getSafeReturnPath(candidate) {
+  if (!candidate) return null;
+  try {
+    const target = new URL(candidate, window.location.origin);
+    const path = target.pathname.replace(/\/+$/, '') || '/';
+    if (target.origin !== window.location.origin ||
+        path === '/connexion' || path.startsWith('/connexion/')) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch (error) {
+    console.error('Adresse de retour après connexion invalide :', error);
+    return null;
+  }
+}
+
+function redirectAfterLogin() {
+  const requestedPath = new URLSearchParams(window.location.search).get('returnTo');
+  const returnPath =
+    getSafeReturnPath(requestedPath) ||
+    getSafeReturnPath(document.referrer) ||
+    '/';
+  window.location.replace(returnPath);
+}
+
 async function checkExistingSession() {
   const sessionId = panelAuth.getSessionId();
   if (!sessionId) return;
 
   try {
     await panelAuth.requireSession();
-    window.location.replace('/');
+    redirectAfterLogin();
   } catch (error) {
     errorMessage.textContent = error.message;
   }
@@ -41,7 +64,7 @@ form.addEventListener('submit', async (event) => {
     if (!response.ok) throw new Error(data.error || `Connexion impossible (${response.status}).`);
 
     localStorage.setItem(panelAuth.sessionKey, data.sessionId);
-    window.location.replace('/');
+    redirectAfterLogin();
   } catch (error) {
     errorMessage.textContent = error.message || 'Le serveur est momentanément inaccessible.';
   } finally {

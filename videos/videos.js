@@ -7,7 +7,6 @@ const sessionKey = 'panel_session_id';
 const sharedLibrary = document.getElementById('shared-library');
 const sharedLibraryCounts = document.getElementById('shared-library-counts');
 const sharedStorageCard = document.getElementById('shared-storage-card');
-const sharedLibraryPanel = document.getElementById('shared-library-panel');
 const sharedLibraryMessage = document.getElementById('shared-library-message');
 const sharedLibrarySearch = document.getElementById('shared-library-search');
 const sharedLibraryNoResults = document.getElementById('shared-library-no-results');
@@ -84,12 +83,14 @@ const seriesEditorHost = document.getElementById('series-editor-host');
 const videoToast = document.getElementById('video-toast');
 const playerDialog = document.getElementById('video-player-dialog');
 const videoPlayer = document.getElementById('video-player');
+const mobilePlayerQuery = window.matchMedia('(max-width: 700px)');
 const playerTitle = document.getElementById('player-title');
 const playerSubtitle = document.getElementById('player-subtitle');
 const playerKind = document.getElementById('player-kind');
 const playerShareNote = document.getElementById('player-share-note');
 const playerMessage = document.getElementById('player-message');
 const playerShell = document.querySelector('.player-shell');
+const vitaLoadSiteHeader = document.querySelector('.vl-site-header');
 const playPauseButton = document.getElementById('player-play-pause');
 const seekInput = document.getElementById('player-seek');
 const currentTimeLabel = document.getElementById('player-current-time');
@@ -101,9 +102,12 @@ const episodeOption = document.getElementById('episode-option');
 const autoplayNextOption = document.getElementById('autoplay-next-option');
 const seasonSelect = document.getElementById('season-select');
 const episodeSelect = document.getElementById('episode-select');
-const collectionSelect = document.getElementById('collection-select');
 const playbackSpeed = document.getElementById('playback-speed');
+const playbackSpeedValue = document.getElementById('playback-speed-value');
+const playbackSpeedReset = document.getElementById('player-speed-reset');
 const autoplayNext = document.getElementById('autoplay-next');
+const autoplayNextPreferenceKey = 'vitaload-videos-autoplay-next';
+const autoplayNextAccountKey = 'videoAutoplayNext';
 const playerRecommendations = document.getElementById('player-recommendations');
 const playerRecommendationsList = document.getElementById('player-recommendations-list');
 const playerEpisodeNavigation = document.getElementById('player-episode-navigation');
@@ -126,6 +130,8 @@ let lastPlaybackProgressWrite = 0;
 let playbackProgressStorageErrorReported = false;
 let playbackProgressSyncErrorReported = false;
 let playbackProgressSaveQueue = Promise.resolve();
+let autoplayNextPreferenceReady = Promise.resolve();
+let autoplayNextPreferenceSaveQueue = Promise.resolve();
 const accountPlaybackProgress = new Map();
 let playbackProgressReady = Promise.resolve();
 let appDialogResolver;
@@ -156,6 +162,35 @@ function showFullscreenControls() {
     }, 2500);
   }
 }
+
+function updateVideoPlayerMode() {
+  const useNativeControls = mobilePlayerQuery.matches;
+  videoPlayer.controls = useNativeControls;
+  playerShell.classList.toggle('native-mobile-player', useNativeControls);
+}
+
+function updateSiteHeaderScrollbarGap() {
+  if (!vitaLoadSiteHeader || vitaLoadSiteHeader.parentElement !== playerShell) return;
+  const scrollbarWidth = Math.max(0, playerDialog.offsetWidth - playerDialog.clientWidth);
+  playerShell.style.setProperty('--player-scrollbar-width', `${scrollbarWidth}px`);
+}
+
+function moveSiteHeaderIntoPlayer() {
+  if (!vitaLoadSiteHeader || vitaLoadSiteHeader.parentElement === playerShell) return;
+  playerShell.prepend(vitaLoadSiteHeader);
+  playerShell.classList.add('has-vitaload-header');
+}
+
+function restoreSiteHeader() {
+  if (!vitaLoadSiteHeader || vitaLoadSiteHeader.parentElement === document.body) return;
+  document.body.prepend(vitaLoadSiteHeader);
+  playerShell.classList.remove('has-vitaload-header');
+  playerShell.style.removeProperty('--player-scrollbar-width');
+}
+
+updateVideoPlayerMode();
+mobilePlayerQuery.addEventListener('change', updateVideoPlayerMode);
+window.addEventListener('resize', updateSiteHeaderScrollbarGap);
 
 function requestPromise(request) {
   return new Promise((resolve, reject) => {
@@ -689,6 +724,9 @@ async function requestPersistentLocalStorage() {
 }
 
 function setMessage(element, text, isError = false) {
+  if (element === playerMessage && isError) {
+    showVideoToast(text, true);
+  }
   element.textContent = text;
   element.classList.toggle('is-error', isError);
 }
@@ -1024,7 +1062,7 @@ function updateUploadDestinationCopy() {
   const isSharedDestination = canManageSharedVideos && uploadDestination.value === 'shared';
   uploadEyebrow.textContent = isSharedDestination ? 'Bibliothèque publique' : 'Bibliothèque personnelle';
   uploadStorageLabel.textContent = isSharedDestination
-    ? 'Comptes autorisés · quota serveur 20 Gio'
+    ? 'Bibliothèque publique · quota serveur 20 Gio'
     : 'Enregistré uniquement dans ce navigateur';
   uploadSubmit.textContent = isSharedDestination
     ? 'Importer et partager'
@@ -1170,6 +1208,74 @@ function showVideoToast(message, isError = false) {
   }, 5000);
 }
 
+function readLocalAutoplayNextPreference() {
+  try {
+    const savedPreference = localStorage.getItem(autoplayNextPreferenceKey);
+    if (savedPreference === 'true') return true;
+    if (savedPreference === 'false') return false;
+    if (savedPreference !== null) {
+      console.error('Préférence locale de lecture automatique invalide.');
+    }
+  } catch (error) {
+    console.error('Impossible de charger la préférence de lecture automatique :', error);
+    showVideoToast('Impossible de charger la préférence de lecture automatique.', true);
+  }
+  return null;
+}
+
+function writeLocalAutoplayNextPreference(preference) {
+  try {
+    localStorage.setItem(autoplayNextPreferenceKey, String(preference));
+    return true;
+  } catch (error) {
+    console.error('Impossible de sauvegarder la préférence de lecture automatique :', error);
+    showVideoToast('Impossible de sauvegarder ce réglage dans ce navigateur.', true);
+    return false;
+  }
+}
+
+async function initializeAutoplayNextPreference(accountData) {
+  const accountPreference = accountData?.[autoplayNextAccountKey];
+  if (typeof accountPreference === 'boolean') {
+    autoplayNext.checked = accountPreference;
+    writeLocalAutoplayNextPreference(accountPreference);
+    return;
+  }
+
+  if (accountData && Object.prototype.hasOwnProperty.call(accountData, autoplayNextAccountKey)) {
+    console.error('Préférence du compte pour la lecture automatique invalide.');
+  }
+
+  const localPreference = readLocalAutoplayNextPreference();
+  if (localPreference === null) return;
+
+  autoplayNext.checked = localPreference;
+  if (!panelAuth.getSessionId()) return;
+  try {
+    await window.VitaLoadPanelData.save(autoplayNextAccountKey, localPreference);
+  } catch (error) {
+    console.error('Impossible de migrer la préférence de lecture automatique vers le compte :', error);
+    showVideoToast('Le choix est conservé sur cet appareil, mais n’a pas pu être synchronisé avec le compte.', true);
+  }
+}
+
+async function saveAutoplayNextPreference() {
+  const preference = autoplayNext.checked;
+  writeLocalAutoplayNextPreference(preference);
+  if (!panelAuth.getSessionId()) return;
+
+  const saveRequest = autoplayNextPreferenceSaveQueue
+    .catch(() => {})
+    .then(() => window.VitaLoadPanelData.save(autoplayNextAccountKey, preference));
+  autoplayNextPreferenceSaveQueue = saveRequest;
+  try {
+    await saveRequest;
+  } catch (error) {
+    console.error('Impossible de synchroniser la préférence de lecture automatique :', error);
+    showVideoToast('Le choix est conservé sur cet appareil, mais n’a pas pu être synchronisé avec le compte.', true);
+  }
+}
+
 function showAppDialog({ title, message = '', inputLabel = '', initialValue = '', confirmLabel = 'Confirmer', destructive = false }) {
   appDialogTitle.textContent = title;
   appDialogMessage.textContent = message;
@@ -1250,8 +1356,12 @@ function updateSharedLibrarySummary(data) {
   const series = collections.filter((collection) => collection.type === 'series').length;
   sharedLibraryCounts.textContent =
     `${movies} film${movies === 1 ? '' : 's'} · ${series} série${series === 1 ? '' : 's'}`;
-  sharedUsage.textContent =
-    `${formatBytes(data.usedBytes)} utilisés sur ${formatBytes(data.quotaBytes)}`;
+  const hasStorageData = Number.isFinite(data.usedBytes) && Number.isFinite(data.quotaBytes);
+  sharedUsage.hidden = !canViewSharedVideos || !hasStorageData;
+  if (!sharedUsage.hidden) {
+    sharedUsage.textContent =
+      `${formatBytes(data.usedBytes)} utilisés sur ${formatBytes(data.quotaBytes)}`;
+  }
 }
 
 async function refreshLibrary(source) {
@@ -1656,8 +1766,12 @@ function renderCollection(container, collection, source) {
   const card = makeElement('article', 'video-card');
   card.dataset.searchTitle = normalizeSearchText(collection.title);
   card.dataset.collectionType = collection.type;
-  const poster = makeElement('div', 'video-card-poster is-empty');
-  poster.setAttribute('aria-hidden', 'true');
+  const poster = makeElement('button', 'video-card-poster is-empty');
+  poster.type = 'button';
+  poster.setAttribute('aria-label', `Ouvrir ${collection.title}`);
+  poster.dataset.action = 'open';
+  poster.dataset.source = source;
+  poster.dataset.collectionId = collection.id;
   const placeholder = createIcon('play');
   placeholder.classList.add('poster-placeholder');
   poster.append(placeholder);
@@ -1682,14 +1796,14 @@ function renderCollection(container, collection, source) {
     : `${formatMediaFormats(collection.videos)} · ${count} film${count === 1 ? '' : 's'} · ${formatBytes(collectionByteSize(collection))}`;
   const meta = makeElement('p', 'video-card-meta', metaText);
   const actions = makeElement('div', 'video-card-actions');
-  const playButton = makeElement('button', 'vl-button', collection.type === 'series' ? 'Ouvrir la série' : 'Regarder');
-  playButton.type = 'button';
-  playButton.title = collection.type === 'series' ? 'Ouvrir la série' : 'Lire le film';
-  setIcon(playButton, 'play');
-  playButton.dataset.action = 'play';
-  playButton.dataset.source = source;
-  playButton.dataset.collectionId = collection.id;
-  actions.append(playButton);
+  const openButton = makeElement('button', 'vl-button', collection.type === 'series' ? 'Ouvrir la série' : 'Ouvrir le film');
+  openButton.type = 'button';
+  openButton.title = collection.type === 'series' ? 'Ouvrir sans lancer un épisode' : 'Ouvrir sans lancer le film';
+  setIcon(openButton, 'play');
+  openButton.dataset.action = 'open';
+  openButton.dataset.source = source;
+  openButton.dataset.collectionId = collection.id;
+  actions.append(openButton);
   if (collection.type === 'series') {
     const episodesButton = makeElement(
       'button',
@@ -1791,10 +1905,27 @@ async function loadSharedCollections() {
   return panelAuth.request('/vital/api/videos/shared');
 }
 
-async function loadSharedLibrary() {
-  if (!canViewSharedVideos) return;
+async function loadPublicCollections() {
+  const response = await fetch(window.config.getApiUrl('/vital/api/videos/public'));
+  let data;
   try {
-    const data = await loadSharedCollections();
+    data = await response.json();
+  } catch {
+    throw new Error('Le serveur a renvoyé une réponse invalide pour la bibliothèque publique.');
+  }
+  if (!response.ok) {
+    throw new Error(data.error || `Impossible de charger la bibliothèque (${response.status}).`);
+  }
+  if (!Array.isArray(data.collections)) {
+    throw new Error('Le serveur a renvoyé une bibliothèque publique invalide.');
+  }
+  return data;
+}
+
+async function loadSharedLibrary() {
+  let data;
+  try {
+    data = await loadPublicCollections();
     sharedLibraryMessage.hidden = true;
     setMessage(sharedLibraryMessage, '');
     clearCoverObjectUrls(sharedLibrary);
@@ -1805,12 +1936,22 @@ async function loadSharedLibrary() {
     applyLibrarySearch(sharedLibrarySearch, sharedLibrary, sharedLibraryNoResults);
     sharedEmpty.hidden = data.collections.length > 0;
     updateSharedLibrarySummary(data);
-    updateSharedStorage(data);
   } catch (error) {
     setMessage(sharedLibraryMessage, error.message, true);
     sharedLibraryMessage.hidden = false;
     sharedLibraryCounts.textContent = 'Nombre de titres indisponible';
-    sharedUsage.textContent = 'Bibliothèque indisponible';
+    sharedUsage.hidden = true;
+    sharedEmpty.hidden = true;
+    console.error('Impossible de charger la bibliothèque publique :', error);
+    return;
+  }
+
+  if (!canViewSharedVideos) return;
+  try {
+    const storageData = await loadSharedCollections();
+    updateSharedLibrarySummary(storageData);
+    updateSharedStorage(storageData);
+  } catch (error) {
     sharedStorageUsed.textContent = 'Indisponible';
     sharedStorageAvailable.textContent = 'Indisponible';
     sharedStorageQuota.textContent = 'Indisponible';
@@ -1818,21 +1959,15 @@ async function loadSharedLibrary() {
     sharedStorageNote.textContent = `Impossible de charger le détail du stockage : ${error.message}`;
     sharedStorageDetails.replaceChildren();
     sharedStorageEmpty.hidden = true;
+    console.error('Impossible de charger le stockage de la bibliothèque partagée :', error);
   }
 }
 
 async function loadSharedCover(collectionId) {
-  const sessionId = panelAuth.getSessionId();
-  if (!sessionId) throw new Error('Connexion requise.');
   const url = window.config.getApiUrl(
-    `/vital/api/videos/${encodeURIComponent(collectionId)}/cover`
+    `/vital/api/videos/public/${encodeURIComponent(collectionId)}/cover`
   );
-  const response = await fetch(url, { headers: { 'X-Panel-Session': sessionId } });
-  if (response.status === 401) {
-    panelAuth.clearSession();
-    window.location.replace('/connexion/');
-    throw new Error('Votre session a expiré.');
-  }
+  const response = await fetch(url);
   if (!response.ok) throw new Error(`Impossible de charger l’image (${response.status}).`);
   return response.blob();
 }
@@ -1868,8 +2003,8 @@ async function detectSuperadmin() {
     canViewSharedVideos = isSuperadmin || session.allowedSites?.includes('videos') === true;
     canManageSharedVideos = canViewSharedVideos;
     sharedStorageCard.hidden = !canViewSharedVideos;
+    sharedUsage.hidden = !canViewSharedVideos;
     storageOverviewGrid.classList.toggle('is-local-only', !canViewSharedVideos);
-    sharedLibraryPanel.hidden = !canViewSharedVideos;
     if (canManageSharedVideos) {
       uploadDestinationField.hidden = false;
       updateUploadDestinationCopy();
@@ -2300,7 +2435,7 @@ function isValidPlaybackProgress(progress) {
 }
 
 async function initializePlaybackProgress() {
-  if (!panelAuth.getSessionId()) return;
+  if (!panelAuth.getSessionId()) return null;
 
   const localEntries = {};
   const localEntryValues = new Map();
@@ -2326,8 +2461,9 @@ async function initializePlaybackProgress() {
     showVideoToast(`Lecture des progressions locales impossible : ${error.message}`, true);
   }
 
+  let accountData = null;
   try {
-    const accountData = await window.VitaLoadPanelData.loadAndMigrate(localEntries);
+    accountData = await window.VitaLoadPanelData.loadAndMigrate(localEntries);
     for (const [key, value] of Object.entries(accountData || {})) {
       if (key.startsWith('videoProgress:') && isValidPlaybackProgress(value)) {
         const existingProgress = accountPlaybackProgress.get(key);
@@ -2343,6 +2479,7 @@ async function initializePlaybackProgress() {
       if (!accountPlaybackProgress.has(key)) accountPlaybackProgress.set(key, value);
     }
   }
+  return accountData;
 }
 
 function readPlaybackProgress(source, episodeId) {
@@ -2490,44 +2627,16 @@ async function copyPlaybackUrl() {
     await navigator.clipboard.writeText(shareUrl);
     showVideoToast(currentSource === 'local'
       ? 'Lien copié. Il fonctionne uniquement dans ce navigateur, où la vidéo est enregistrée.'
-      : 'Lien copié. Les personnes qui l’ouvrent doivent être connectées et autorisées à voir la bibliothèque.');
+      : 'Lien copié. La vidéo partagée est accessible à tout le monde.');
   } catch (error) {
     showVideoToast(`Copie impossible : ${error.message}. L’adresse de partage est dans la barre d’adresse.`, true);
   }
 }
 
 async function requestSharedPlaybackUrl(videoId) {
-  const sessionId = panelAuth.getSessionId();
-  if (!sessionId) {
-    panelAuth.clearSession();
-    window.location.replace('/connexion/');
-    throw new Error('Connexion requise.');
-  }
-  const endpoint = window.config.getApiUrl(
-    `/vital/api/videos/shared/${encodeURIComponent(videoId)}/playback-ticket`
+  return window.config.getApiUrl(
+    `/vital/api/videos/public/${encodeURIComponent(videoId)}/stream`
   );
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'X-Panel-Session': sessionId }
-  });
-  let data;
-  try {
-    data = await response.json();
-  } catch {
-    data = {};
-  }
-  if (response.status === 401) {
-    panelAuth.clearSession();
-    window.location.replace('/connexion/');
-    throw new Error(data.error || 'Votre session a expiré.');
-  }
-  if (!response.ok) {
-    throw new Error(data.error || `Impossible d’autoriser la lecture (${response.status}).`);
-  }
-  if (typeof data.streamPath !== 'string' || !data.streamPath.startsWith('/vital/api/videos/')) {
-    throw new Error('Le serveur a renvoyé une adresse de lecture invalide.');
-  }
-  return window.config.getApiUrl(data.streamPath);
 }
 
 async function showEpisode(index, shouldPlay = false) {
@@ -2552,7 +2661,7 @@ async function showEpisode(index, shouldPlay = false) {
   }
   playerShareNote.textContent = currentSource === 'local'
     ? 'Lien valable uniquement dans ce navigateur.'
-    : 'Les personnes doivent être connectées et autorisées à consulter la bibliothèque partagée.';
+    : 'Cette vidéo est accessible à tout le monde.';
   setMessage(playerMessage, '');
 
   if (currentSource === 'shared') {
@@ -2576,6 +2685,7 @@ async function showEpisode(index, shouldPlay = false) {
     currentVideoUrl = URL.createObjectURL(storedVideo.blob);
   }
   if (generation !== playbackGeneration) return;
+  updateVideoPlayerMode();
   pendingPlaybackResume = {
     generation,
     time: savedProgress?.time || 0
@@ -2598,7 +2708,8 @@ async function showEpisode(index, shouldPlay = false) {
   }
 }
 
-async function openPlayer(collection, source, collections, episodeId = null) {
+async function openPlayer(collection, source, collections, episodeId = null, shouldPlay = true) {
+  await autoplayNextPreferenceReady;
   savePlaybackProgress(true);
   playbackResumeReady = false;
   pendingPlaybackResume = null;
@@ -2610,28 +2721,25 @@ async function openPlayer(collection, source, collections, episodeId = null) {
     : 0;
   currentEpisodeIndex = selectedIndex >= 0 ? selectedIndex : 0;
   currentCatalog = collections;
-  collectionSelect.replaceChildren();
-  for (const catalogCollection of currentCatalog) {
-    const option = document.createElement('option');
-    option.value = catalogCollection.id;
-    option.textContent = `${catalogCollection.type === 'series' ? 'Série' : 'Film'} · ${catalogCollection.title}`;
-    collectionSelect.append(option);
-  }
-
-  collectionSelect.value = collection.id;
   renderPlayerRecommendations();
   playerKind.textContent = collection.type === 'series' ? 'Série' : 'Film';
   fillEpisodeOptions();
+  moveSiteHeaderIntoPlayer();
   document.body.classList.add('player-open');
   if (!playerDialog.open) {
     try {
       playerDialog.showModal();
+      playerShell.focus({ preventScroll: true });
+      updateSiteHeaderScrollbarGap();
     } catch (error) {
+      restoreSiteHeader();
       document.body.classList.remove('player-open');
       throw error;
     }
+  } else {
+    updateSiteHeaderScrollbarGap();
   }
-  await showEpisode(currentEpisodeIndex, true);
+  await showEpisode(currentEpisodeIndex, shouldPlay);
 }
 
 async function openPlaybackFromUrl() {
@@ -2646,12 +2754,12 @@ async function openPlaybackFromUrl() {
 
   const collections = source === 'local'
     ? await getLocalCollections()
-    : (await loadSharedCollections()).collections;
+    : (await loadPublicCollections()).collections;
   const collection = collections.find((item) => item.id === collectionId);
   if (!collection) {
     throw new Error(source === 'local'
       ? 'Cette vidéo locale est introuvable dans ce navigateur.'
-      : 'Cette vidéo partagée est introuvable ou tu n’as pas le droit de la consulter.');
+      : 'Cette vidéo partagée est introuvable.');
   }
   if (!sortedEpisodes(collection).some((episode) => episode.id === episodeId)) {
     throw new Error('Cet épisode n’existe plus dans la bibliothèque.');
@@ -2686,7 +2794,7 @@ async function handleCollectionAction(event) {
     if (action === 'episodes') {
       const collections = source === 'local'
         ? await getLocalCollections()
-        : (await loadSharedCollections()).collections;
+        : (await loadPublicCollections()).collections;
       const collection = collections.find((item) => item.id === collectionId);
       if (!collection || collection.type !== 'series') throw new Error('Série introuvable.');
       openCollectionDetails(collection, 'SAISONS ET ÉPISODES', source, collections);
@@ -2745,13 +2853,13 @@ async function handleCollectionAction(event) {
       updateSharedStorage(data);
       return;
     }
-    if (action === 'play') {
+    if (action === 'open') {
       const collections = source === 'local'
         ? await getLocalCollections()
-        : (await loadSharedCollections()).collections;
+        : (await loadPublicCollections()).collections;
       const collection = collections.find((item) => item.id === collectionId);
       if (!collection) throw new Error('Film ou série introuvable.');
-      await openPlayer(collection, source, collections);
+      await openPlayer(collection, source, collections, null, false);
       return;
     }
     if (action !== 'delete') return;
@@ -2872,6 +2980,7 @@ document.getElementById('copy-player-link').addEventListener('click', () => {
   void copyPlaybackUrl();
 });
 playerDialog.addEventListener('close', () => {
+  restoreSiteHeader();
   clearPlayerUrls();
   clearCoverObjectUrls(playerRecommendationsList);
   playerRecommendationsList.replaceChildren();
@@ -2895,19 +3004,15 @@ episodeSelect.addEventListener('change', async () => {
   const index = sortedEpisodes(currentCollection).findIndex((episode) => episode.id === episodeSelect.value);
   await showEpisode(index, true);
 });
-collectionSelect.addEventListener('change', async () => {
-  const collection = currentCatalog.find((item) => item.id === collectionSelect.value);
-  if (!collection) return;
-  savePlaybackProgress(true);
-  playbackResumeReady = false;
-  currentCollection = collection;
-  currentEpisodeIndex = 0;
-  playerKind.textContent = collection.type === 'series' ? 'Série' : 'Film';
-  fillEpisodeOptions();
-  await showEpisode(0, true);
-});
-playbackSpeed.addEventListener('change', () => {
+function applyPlaybackSpeed() {
   videoPlayer.playbackRate = Number(playbackSpeed.value);
+  playbackSpeedValue.value = `${Number(playbackSpeed.value).toLocaleString('fr-FR')}×`;
+}
+
+playbackSpeed.addEventListener('input', applyPlaybackSpeed);
+playbackSpeedReset.addEventListener('click', () => {
+  playbackSpeed.value = '1';
+  applyPlaybackSpeed();
 });
 playPauseButton.addEventListener('click', async () => {
   if (videoPlayer.paused) {
@@ -2980,6 +3085,9 @@ videoPlayer.addEventListener('loadedmetadata', restorePlaybackProgress);
 videoPlayer.addEventListener('durationchange', updatePlayerProgress);
 window.addEventListener('pagehide', () => savePlaybackProgress(true));
 videoPlayer.addEventListener('volumechange', updateMuteButton);
+autoplayNext.addEventListener('change', () => {
+  void saveAutoplayNextPreference();
+});
 videoPlayer.addEventListener('ended', async () => {
   if (currentCollection?.type === 'series' && autoplayNext.checked &&
       currentEpisodeIndex + 1 < sortedEpisodes(currentCollection).length) {
@@ -2987,6 +3095,7 @@ videoPlayer.addEventListener('ended', async () => {
   }
 });
 videoPlayer.addEventListener('click', async () => {
+  if (videoPlayer.controls) return;
   if (videoPlayer.paused) {
     try {
       await videoPlayer.play();
@@ -3005,7 +3114,7 @@ videoPlayer.addEventListener('error', () => {
   } else if (videoPlayer.error) {
     setMessage(
       playerMessage,
-      'La vidéo n’a pas pu être chargée depuis le serveur. Vérifie la connexion et ton accès à la bibliothèque.',
+      'La vidéo n’a pas pu être chargée depuis le serveur. Vérifie ta connexion internet.',
       true
     );
   }
@@ -3013,6 +3122,12 @@ videoPlayer.addEventListener('error', () => {
 
 (async () => {
   playbackProgressReady = initializePlaybackProgress();
+  autoplayNextPreferenceReady = playbackProgressReady
+    .then((accountData) => initializeAutoplayNextPreference(accountData))
+    .catch((error) => {
+      console.error('Impossible de charger la préférence de lecture automatique :', error);
+      showVideoToast('Impossible de charger la préférence de lecture automatique.', true);
+    });
   const localQuotaPromise = updateLocalStorageQuota();
   await detectSuperadmin();
   const sharedLibraryPromise = loadSharedLibrary();

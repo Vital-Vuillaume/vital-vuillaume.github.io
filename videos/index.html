@@ -2,14 +2,15 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="icon" type="image/svg+xml" href="../frontend/images/icon.svg">
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Bibliothèque de films et séries VitaLoad.">
-    <link rel="stylesheet" href="../frontend/css/style.css?v=20261101-auth-header-hidden">
-    <link rel="stylesheet" href="./videos.css?v=20261123-streaming-modal">
+    <link rel="stylesheet" href="../frontend/css/style.css?v=native-dark-scrollbars">
+    <link rel="stylesheet" href="./videos.css?v=speed-slider-match-volume">
     <script defer src="../frontend/js/ipOrigins.js"></script>
     <script defer src="../frontend/js/script.js?v=account-data-sync"></script>
-    <script defer src="./videos.js?v=playback-stream-proxy"></script>
+    <script defer src="./videos.js?v=account-autoplay-next-preference"></script>
     <title>VitaLoad · Vidéos</title>
   </head>
   <body class="video-page vl-modern-page">
@@ -20,57 +21,15 @@
         <p class="vl-page-description">Crée ta bibliothèque de films et de séries, puis regarde-les avec le lecteur VitaLoad.</p>
       </header>
 
-      <section id="storage-overview" class="videos-panel" aria-labelledby="storage-overview-title">
-        <div class="videos-panel-heading">
-          <div>
-            <p class="videos-eyebrow">Espace utilisé</p>
-            <h2 id="storage-overview-title">Stockage des bibliothèques</h2>
-          </div>
-          <p class="library-usage">Détail par film, série et épisode</p>
-        </div>
-        <div class="storage-overview-grid is-local-only">
-          <article class="storage-card" aria-labelledby="local-storage-title">
-            <div class="storage-card-heading">
-              <h3 id="local-storage-title">Stockage local</h3>
-              <span class="storage-scope">Ma bibliothèque</span>
-            </div>
-            <div class="storage-metrics">
-              <p><span>Espace des vidéos</span><strong id="local-storage-used">Calcul…</strong></p>
-              <p><span>Libre estimé</span><strong id="local-storage-available">Calcul…</strong></p>
-              <p><span>Quota maximal estimé par le navigateur</span><strong id="local-storage-quota">Calcul…</strong></p>
-            </div>
-            <progress id="local-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace du navigateur utilisé"></progress>
-            <p id="local-storage-note" class="storage-note">Le quota dépend du navigateur et de l’espace disponible sur l’appareil. La bibliothèque demandera aussi le stockage persistant pour éviter son effacement automatique.</p>
-            <div id="local-storage-details" class="storage-details"></div>
-            <p id="local-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque locale.</p>
-          </article>
-          <article id="shared-storage-card" class="storage-card" aria-labelledby="shared-storage-title" hidden>
-            <div class="storage-card-heading">
-              <h3 id="shared-storage-title">Bibliothèque partagée</h3>
-              <span class="storage-scope">Serveur · quota 20 Gio</span>
-            </div>
-            <div class="storage-metrics">
-              <p><span>Espace des vidéos</span><strong id="shared-storage-used">Chargement…</strong></p>
-              <p><span>Libre sur le serveur</span><strong id="shared-storage-available">Chargement…</strong></p>
-              <p><span>Quota serveur</span><strong id="shared-storage-quota">20 Gio</strong></p>
-            </div>
-            <progress id="shared-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace serveur utilisé"></progress>
-            <p id="shared-storage-note" class="storage-note">Visibles uniquement aux comptes ayant le droit d’accès Vidéos.</p>
-            <p class="storage-note">Les vidéos partagées sont lues en continu depuis le serveur. Le navigateur met temporairement en mémoire les données nécessaires à la lecture, sans enregistrer le film complet dans IndexedDB.</p>
-            <div id="shared-storage-details" class="storage-details"></div>
-            <p id="shared-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque partagée.</p>
-          </article>
-        </div>
-      </section>
-
-      <section id="shared-library-panel" class="videos-panel" aria-labelledby="shared-library-title" hidden>
+      <section id="shared-library-panel" class="videos-panel" aria-labelledby="shared-library-title">
         <div class="videos-panel-heading">
           <div>
             <p class="videos-eyebrow">POUR TOI · VITALOAD</p>
             <h2 id="shared-library-title">Films partagés par VitaLoad</h2>
+            <p class="library-usage">Lecture accessible sans connexion; ajout, modification et détail du stockage réservés aux comptes autorisés.</p>
             <p id="shared-library-counts" class="library-counts" aria-live="polite">Chargement…</p>
           </div>
-          <p id="shared-library-usage" class="library-usage">Chargement…</p>
+          <p id="shared-library-usage" class="library-usage" hidden></p>
         </div>
         <label class="library-search">
           <span class="sr-only">Rechercher un film ou une série</span>
@@ -100,7 +59,7 @@
             <span>Destination</span>
             <select id="upload-destination" class="vl-input" name="destination">
               <option value="local">Garder uniquement dans ma bibliothèque locale</option>
-              <option value="shared">Partager avec les comptes autorisés (serveur)</option>
+              <option value="shared">Publier dans la bibliothèque VitaLoad (serveur)</option>
             </select>
           </label>
           <label class="video-field">
@@ -183,6 +142,49 @@
         <p id="local-library-no-results" class="library-empty" hidden>Aucun titre ne correspond à la recherche.</p>
         <p id="local-library-empty" class="library-empty">Ta bibliothèque locale est vide. Sélectionne des vidéos ou un dossier pour commencer.</p>
       </section>
+
+      <section id="storage-overview" class="videos-panel" aria-labelledby="storage-overview-title">
+        <div class="videos-panel-heading">
+          <div>
+            <p class="videos-eyebrow">Espace utilisé</p>
+            <h2 id="storage-overview-title">Stockage des bibliothèques</h2>
+          </div>
+          <p class="library-usage">Détail par film, série et épisode</p>
+        </div>
+        <div class="storage-overview-grid is-local-only">
+          <article class="storage-card" aria-labelledby="local-storage-title">
+            <div class="storage-card-heading">
+              <h3 id="local-storage-title">Stockage local</h3>
+              <span class="storage-scope">Ma bibliothèque</span>
+            </div>
+            <div class="storage-metrics">
+              <p><span>Espace des vidéos</span><strong id="local-storage-used">Calcul…</strong></p>
+              <p><span>Libre estimé</span><strong id="local-storage-available">Calcul…</strong></p>
+              <p><span>Quota maximal estimé par le navigateur</span><strong id="local-storage-quota">Calcul…</strong></p>
+            </div>
+            <progress id="local-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace du navigateur utilisé"></progress>
+            <p id="local-storage-note" class="storage-note">Le quota dépend du navigateur et de l’espace disponible sur l’appareil. La bibliothèque demandera aussi le stockage persistant pour éviter son effacement automatique.</p>
+            <div id="local-storage-details" class="storage-details"></div>
+            <p id="local-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque locale.</p>
+          </article>
+          <article id="shared-storage-card" class="storage-card" aria-labelledby="shared-storage-title" hidden>
+            <div class="storage-card-heading">
+              <h3 id="shared-storage-title">Bibliothèque partagée</h3>
+              <span class="storage-scope">Serveur · quota 20 Gio</span>
+            </div>
+            <div class="storage-metrics">
+              <p><span>Espace des vidéos</span><strong id="shared-storage-used">Chargement…</strong></p>
+              <p><span>Libre sur le serveur</span><strong id="shared-storage-available">Chargement…</strong></p>
+              <p><span>Quota serveur</span><strong id="shared-storage-quota">20 Gio</strong></p>
+            </div>
+            <progress id="shared-storage-progress" class="storage-progress" max="100" value="0" aria-label="Espace serveur utilisé"></progress>
+            <p id="shared-storage-note" class="storage-note">Détail du stockage visible uniquement aux comptes autorisés.</p>
+            <p class="storage-note">Les vidéos partagées sont lues en continu depuis le serveur. Le navigateur met temporairement en mémoire les données nécessaires à la lecture, sans enregistrer le film complet dans IndexedDB.</p>
+            <div id="shared-storage-details" class="storage-details"></div>
+            <p id="shared-storage-empty" class="library-empty" hidden>Aucune vidéo dans la bibliothèque partagée.</p>
+          </article>
+        </div>
+      </section>
     </main>
 
     <dialog id="series-editor-dialog" class="series-editor-dialog">
@@ -222,8 +224,8 @@
 
     <div id="video-toast" class="video-toast" role="status" aria-live="polite" hidden></div>
 
-    <dialog id="video-player-dialog" class="video-player-dialog">
-      <div class="player-shell">
+    <dialog id="video-player-dialog" class="video-player-dialog" aria-labelledby="player-title">
+      <div class="player-shell" tabindex="-1">
         <header class="player-heading">
           <div>
             <p id="player-kind" class="videos-eyebrow">Lecture</p>
@@ -251,10 +253,20 @@
               <span aria-hidden="true">◖))</span>
             </button>
             <input id="player-volume" class="player-volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+            <div class="player-speed-control">
+              <button id="player-speed-reset" class="player-icon-button player-speed-icon" type="button" aria-label="Rétablir la vitesse normale" title="Vitesse normale">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="m4 5 7 7-7 7m9-14 7 7-7 7"/>
+                </svg>
+              </button>
+              <input id="playback-speed" class="player-speed" type="range" min="0.5" max="2" step="0.25" value="1" aria-label="Vitesse de lecture">
+              <output id="playback-speed-value" class="player-speed-value" for="playback-speed">1×</output>
+            </div>
             <button id="fullscreen-button" class="player-icon-button" type="button" aria-label="Plein écran" title="Plein écran">
               <span aria-hidden="true">⛶</span>
             </button>
           </div>
+          <p id="player-message" class="video-message" role="status" aria-live="polite"></p>
         </div>
         <div id="player-episode-navigation" class="player-episode-navigation" hidden>
           <label class="player-option" id="season-option" hidden>
@@ -265,30 +277,11 @@
             <span>Épisode</span>
             <select id="episode-select" class="vl-input"></select>
           </label>
-        </div>
-        <div class="player-toolbar">
-          <label class="player-option player-title-option">
-            <span>Dans la bibliothèque</span>
-            <select id="collection-select" class="vl-input"></select>
-          </label>
-          <label class="player-option">
-            <span>Vitesse</span>
-            <select id="playback-speed" class="vl-input">
-              <option value="0.5">0,5×</option>
-              <option value="0.75">0,75×</option>
-              <option value="1" selected>Normale</option>
-              <option value="1.25">1,25×</option>
-              <option value="1.5">1,5×</option>
-              <option value="1.75">1,75×</option>
-              <option value="2">2×</option>
-            </select>
-          </label>
           <label id="autoplay-next-option" class="player-autonext">
             <input id="autoplay-next" type="checkbox" checked>
             <span>Lire l’épisode suivant</span>
           </label>
         </div>
-        <p id="player-message" class="video-message" role="status" aria-live="polite"></p>
         <section id="player-recommendations" class="player-recommendations" aria-labelledby="player-recommendations-title" hidden>
           <h3 id="player-recommendations-title">À découvrir aussi</h3>
           <div id="player-recommendations-list" class="video-library player-recommendations-list"></div>

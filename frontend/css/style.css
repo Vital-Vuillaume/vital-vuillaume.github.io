@@ -1,6 +1,7 @@
 :root {
   --textColor: white;
   --bgColor: #0abab569;
+  color-scheme: dark;
 }
 
 * {
